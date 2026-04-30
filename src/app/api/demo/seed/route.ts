@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
+import type { Wallet } from "@prisma/client";
 
 export async function POST() {
   if (process.env.NODE_ENV === "production") {
@@ -14,7 +15,7 @@ export async function POST() {
 
   // Add balances to wallets
   await Promise.all(
-    wallets.map((w: (typeof wallets)[number]) =>
+    wallets.map((w: Wallet) =>
       prisma.wallet.update({
         where: { id: w.id },
         data: { balance: w.asset === "USDC" ? 2450 : w.asset === "USDT" ? 800 : 300 },
