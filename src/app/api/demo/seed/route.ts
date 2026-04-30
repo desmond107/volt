@@ -14,7 +14,7 @@ export async function POST() {
 
   // Add balances to wallets
   await Promise.all(
-    wallets.map((w) =>
+    wallets.map((w: (typeof wallets)[number]) =>
       prisma.wallet.update({
         where: { id: w.id },
         data: { balance: w.asset === "USDC" ? 2450 : w.asset === "USDT" ? 800 : 300 },
