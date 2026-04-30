@@ -168,7 +168,7 @@ export default function Hero() {
         className="absolute inset-0 w-full h-full object-cover pointer-events-none"
         style={{ opacity: 1 }}
       >
-        <source src="/hero-bg.mp4" type="video/mp4" />
+        <source src="/volt-video.mp4" type="video/mp4" />
       </video>
       {/* Dark overlay to keep text readable */}
       <div className="absolute inset-0 bg-[#020d1a]/70 pointer-events-none" />
