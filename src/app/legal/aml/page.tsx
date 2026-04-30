@@ -5,7 +5,7 @@ import { Shield } from "lucide-react";
 const sections = [
   {
     title: "1. Our Commitment",
-    body: `Volt Financial Technologies is committed to combating money laundering, terrorist financing, and other financial crimes. We comply with the Proceeds of Crime and Anti-Money Laundering Act (POCAMLA) of Kenya and applicable international standards set by the Financial Action Task Force (FATF).`,
+    body: `Volt Digital Pay Technologies is committed to combating money laundering, terrorist financing, and other financial crimes. We comply with the Proceeds of Crime and Anti-Money Laundering Act (POCAMLA) of Kenya and applicable international standards set by the Financial Action Task Force (FATF).`,
   },
   {
     title: "2. Know Your Customer (KYC)",

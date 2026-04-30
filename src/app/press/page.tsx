@@ -35,8 +35,8 @@ export default function PressPage() {
           <div className="bg-[#061120] border border-[#0d2040] rounded-2xl p-6 flex flex-col items-center justify-center gap-4">
             <EagleLogo size={64} />
             <div className="text-center">
-              <p className="text-sm font-bold text-white">Volt Financial</p>
-              <p className="text-[10px] text-[#c9943a] uppercase tracking-widest">Financial</p>
+              <p className="text-sm font-bold text-white">Volt Digital Pay</p>
+              <p className="text-[10px] text-[#c9943a] uppercase tracking-widest">Digital Pay</p>
             </div>
             <a
               href="/eagle-logo.png"

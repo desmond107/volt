@@ -85,7 +85,7 @@ export default function VirtualCardFace({
             <div className="flex flex-col leading-none">
               <span className="text-white font-semibold text-xs">Volt</span>
               <span className="text-[8px] uppercase tracking-widest font-medium" style={{ color: theme.accent }}>
-                Financial
+                Digital Pay
               </span>
             </div>
           </div>

@@ -30,7 +30,7 @@ We also collect certain information automatically, including IP address, device 
   },
   {
     title: "7. Contact",
-    body: `For privacy-related questions or to exercise your rights, contact our Data Protection Officer at privacy@usezpesa.com or write to us at Volt Financial Technologies, Nairobi, Kenya.`,
+    body: `For privacy-related questions or to exercise your rights, contact our Data Protection Officer at privacy@usezpesa.com or write to us at Volt Digital Pay Technologies, Nairobi, Kenya.`,
   },
 ];
 

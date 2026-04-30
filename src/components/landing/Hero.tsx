@@ -79,7 +79,7 @@ function CardFace({ card, active, direction }: { card: typeof cards[0]; active: 
             <div className="flex flex-col leading-none">
               <span className="text-white font-semibold text-xs">Volt</span>
               <span className="text-[8px] uppercase tracking-widest font-medium" style={{ color: card.accent }}>
-                Financial
+                Digital Pay
               </span>
             </div>
           </div>

@@ -61,7 +61,7 @@ export default function LoginPage() {
             <EagleLogo size={52} />
             <div className="flex flex-col leading-none text-left">
               <span className="text-xl font-bold text-white">Volt</span>
-              <span className="text-[9px] text-[#c9943a] uppercase tracking-[0.15em] font-semibold">Financial</span>
+              <span className="text-[9px] text-[#c9943a] uppercase tracking-[0.15em] font-semibold">Digital Pay</span>
             </div>
           </Link>
           <h1 className="text-2xl font-bold text-white">Welcome back</h1>

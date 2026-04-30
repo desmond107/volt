@@ -53,7 +53,7 @@ export default function Sidebar() {
             <EagleLogo size={36} />
             <div className="flex flex-col leading-none">
               <span className="text-sm font-bold text-white">Volt</span>
-              <span className="text-[8px] text-[#c9943a] uppercase tracking-[0.12em] font-semibold">Financial</span>
+              <span className="text-[8px] text-[#c9943a] uppercase tracking-[0.12em] font-semibold">Digital Pay</span>
             </div>
           </Link>
         )}

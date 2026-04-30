@@ -700,7 +700,7 @@ export default function CardsPage() {
                         </div>
                         <div className="flex flex-col leading-none">
                           <span className="text-white font-semibold text-[10px]">Volt</span>
-                          <span className="text-[7px] uppercase tracking-widest" style={{ color: selectedColorStyle.accent }}>Financial</span>
+                          <span className="text-[7px] uppercase tracking-widest" style={{ color: selectedColorStyle.accent }}>Digital Pay</span>
                         </div>
                       </div>
                       <span className="text-white/50 text-[10px] italic">VISA</span>

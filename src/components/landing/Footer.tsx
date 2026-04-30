@@ -43,7 +43,7 @@ export default function Footer() {
               <EagleLogo size={40} />
               <div className="flex flex-col leading-none">
                 <span className="font-bold text-white text-sm">Volt</span>
-                <span className="text-[8px] text-[#c9943a] uppercase tracking-[0.12em] font-semibold">Financial</span>
+                <span className="text-[8px] text-[#c9943a] uppercase tracking-[0.12em] font-semibold">Digital Pay</span>
               </div>
             </Link>
             <p className="text-xs text-[#6b88b0] leading-relaxed mb-4">
@@ -74,7 +74,7 @@ export default function Footer() {
 
         <div className="border-t border-[#0d2040] pt-8 flex flex-col sm:flex-row justify-between items-center gap-4">
           <p className="text-xs text-[#6b88b0]">
-            © 2025 Volt Financial Technologies. All rights reserved.
+            © 2025 Volt Digital Pay Technologies. All rights reserved.
           </p>
           <div className="flex items-center gap-4 text-xs text-[#6b88b0]">
             <span className="flex items-center gap-1">

@@ -4,7 +4,7 @@ import Footer from "@/components/landing/Footer";
 const sections = [
   {
     title: "1. Acceptance of Terms",
-    body: `By accessing or using Volt Financial services, you agree to be bound by these Terms of Service. If you do not agree, do not use our services. We may update these terms at any time; continued use constitutes acceptance.`,
+    body: `By accessing or using Volt Digital Pay services, you agree to be bound by these Terms of Service. If you do not agree, do not use our services. We may update these terms at any time; continued use constitutes acceptance.`,
   },
   {
     title: "2. Eligibility",
