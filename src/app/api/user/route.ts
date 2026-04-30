@@ -7,36 +7,44 @@ export async function GET() {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const user = await prisma.user.findUnique({
-    where: { id: session.id },
-    select: { id: true, email: true, name: true, kycStatus: true, kycLevel: true, createdAt: true },
-  });
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: session.id },
+      select: { id: true, email: true, name: true, kycStatus: true, kycLevel: true, createdAt: true },
+    });
 
-  return NextResponse.json({ user });
+    return NextResponse.json({ user });
+  } catch {
+    return NextResponse.json({ error: "Failed to fetch user" }, { status: 500 });
+  }
 }
 
 export async function PATCH(req: NextRequest) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { name, currentPassword, newPassword } = await req.json();
+  try {
+    const { name, currentPassword, newPassword } = await req.json();
 
-  if (newPassword) {
-    const user = await prisma.user.findUnique({ where: { id: session.id } });
-    if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 });
-    const valid = await verifyPassword(currentPassword ?? "", user.passwordHash);
-    if (!valid) return NextResponse.json({ error: "Current password is incorrect" }, { status: 400 });
-    await prisma.user.update({
-      where: { id: session.id },
-      data: { passwordHash: await hashPassword(newPassword) },
-    });
-    return NextResponse.json({ ok: true });
+    if (newPassword) {
+      const user = await prisma.user.findUnique({ where: { id: session.id } });
+      if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 });
+      const valid = await verifyPassword(currentPassword ?? "", user.passwordHash);
+      if (!valid) return NextResponse.json({ error: "Current password is incorrect" }, { status: 400 });
+      await prisma.user.update({
+        where: { id: session.id },
+        data: { passwordHash: await hashPassword(newPassword) },
+      });
+      return NextResponse.json({ ok: true });
+    }
+
+    if (name !== undefined) {
+      await prisma.user.update({ where: { id: session.id }, data: { name } });
+      return NextResponse.json({ ok: true });
+    }
+
+    return NextResponse.json({ error: "Nothing to update" }, { status: 400 });
+  } catch {
+    return NextResponse.json({ error: "Failed to update user" }, { status: 500 });
   }
-
-  if (name !== undefined) {
-    await prisma.user.update({ where: { id: session.id }, data: { name } });
-    return NextResponse.json({ ok: true });
-  }
-
-  return NextResponse.json({ error: "Nothing to update" }, { status: 400 });
 }

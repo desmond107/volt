@@ -6,10 +6,14 @@ export async function GET() {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const wallets = await prisma.wallet.findMany({
-    where: { userId: session.id },
-    orderBy: { createdAt: "asc" },
-  });
+  try {
+    const wallets = await prisma.wallet.findMany({
+      where: { userId: session.id },
+      orderBy: { createdAt: "asc" },
+    });
 
-  return NextResponse.json({ wallets });
+    return NextResponse.json({ wallets });
+  } catch {
+    return NextResponse.json({ error: "Failed to fetch wallets" }, { status: 500 });
+  }
 }
