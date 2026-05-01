@@ -18,7 +18,7 @@ function getSecret() {
 
 export async function getSession(): Promise<SessionUser | null> {
   const cookieStore = await cookies();
-  const token = cookieStore.get("zpesa_session")?.value;
+  const token = cookieStore.get("volt_session")?.value;
   if (!token) return null;
 
   try {
@@ -45,7 +45,7 @@ export async function setSession(userId: string) {
     .sign(getSecret());
 
   const cookieStore = await cookies();
-  cookieStore.set("zpesa_session", token, {
+  cookieStore.set("volt_session", token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
@@ -56,5 +56,5 @@ export async function setSession(userId: string) {
 
 export async function clearSession() {
   const cookieStore = await cookies();
-  cookieStore.delete("zpesa_session");
+  cookieStore.delete("volt_session");
 }

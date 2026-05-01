@@ -113,7 +113,7 @@ describe("POST /api/wallet/deposit", () => {
 
     const updatedWallet = { id: "w1", balance: 200 };
     const transaction = { id: "tx1", type: "DEPOSIT" };
-    vi.mocked(prisma.$transaction).mockResolvedValue([updatedWallet, transaction] as never);
+    vi.mocked(prisma.$transaction).mockResolvedValue({ updatedWallet, transaction } as never);
 
     const { POST } = await import("@/app/api/wallet/deposit/route");
     const res = await POST(makeRequest({ walletId: "w1", amount: 100, paymentMethod: "card", cardBrand: "visa", cardLast4: "4242" }));
@@ -178,7 +178,7 @@ describe("POST /api/wallet/transfer", () => {
     vi.mocked(prisma.wallet.findUnique)
       .mockResolvedValueOnce({ id: "w1", userId: "user-1", asset: "USDC", balance: new Prisma.Decimal(500) } as never)
       .mockResolvedValueOnce({ id: "w2", userId: "user-1", asset: "USDT", balance: new Prisma.Decimal(0) } as never);
-    vi.mocked(prisma.$transaction).mockResolvedValue([{}, {}, {}, {}] as never);
+    vi.mocked(prisma.$transaction).mockResolvedValue(undefined as never);
 
     const { POST } = await import("@/app/api/wallet/transfer/route");
     const res = await POST(makeRequest({ fromWalletId: "w1", toWalletId: "w2", amount: 100 }));
@@ -194,12 +194,12 @@ describe("POST /api/wallet/transfer", () => {
     vi.mocked(prisma.wallet.findUnique)
       .mockResolvedValueOnce({ id: "w1", userId: "user-1", asset: "USDC", balance: new Prisma.Decimal(500) } as never)
       .mockResolvedValueOnce({ id: "w2", userId: "user-1", asset: "USDT", balance: new Prisma.Decimal(0) } as never);
-    vi.mocked(prisma.$transaction).mockResolvedValue([{}, {}, {}, {}] as never);
+    vi.mocked(prisma.$transaction).mockResolvedValue(undefined as never);
 
     const { POST } = await import("@/app/api/wallet/transfer/route");
     await POST(makeRequest({ fromWalletId: "w1", toWalletId: "w2", amount: 100 }));
 
-    const txCall = vi.mocked(prisma.$transaction).mock.calls[0][0] as unknown[];
-    expect(txCall).toHaveLength(4);
+    const fn = vi.mocked(prisma.$transaction).mock.calls[0][0];
+    expect(typeof fn).toBe("function");
   });
 });

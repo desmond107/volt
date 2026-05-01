@@ -105,11 +105,16 @@ export default function SettingsPage() {
 
   const handleDelete = async (id: string) => {
     if (!confirm("Revoke this API key?")) return;
-    await fetch("/api/apikeys", {
+    const res = await fetch("/api/apikeys", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id }),
     });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      alert(data.error ?? "Failed to revoke API key.");
+      return;
+    }
     await fetchData();
   };
 

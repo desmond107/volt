@@ -29,33 +29,34 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       return NextResponse.json({ error: "Insufficient wallet balance" }, { status: 400 });
     }
 
-    const results = await prisma.$transaction([
-      prisma.wallet.update({
-        where: { id: card.wallet.id },
+    const { updatedWallet, updatedCard } = await prisma.$transaction(async (tx) => {
+      const updatedWallet = await tx.wallet.update({
+        where: { id: card.wallet!.id },
         data: { balance: { decrement: amount } },
-      }),
-      prisma.virtualCard.update({
+      });
+      const updatedCard = await tx.virtualCard.update({
         where: { id },
         data: { balance: { increment: amount } },
-      }),
-      prisma.transaction.create({
+      });
+      await tx.transaction.create({
         data: {
           userId: session.id,
-          walletId: card.wallet.id,
+          walletId: card.wallet!.id,
           cardId: id,
           type: "CARD_FUNDING",
           status: "COMPLETED",
           amount,
-          currency: card.wallet.asset,
-          description: `Funded ${card.label ?? "card"} from ${card.wallet.asset} wallet`,
+          currency: card.wallet!.asset,
+          description: `Funded ${card.label ?? "card"} from ${card.wallet!.asset} wallet`,
         },
-      }),
-    ]);
+      });
+      return { updatedWallet, updatedCard };
+    });
 
     return NextResponse.json({
       ok: true,
-      cardBalance: results[1].balance.toNumber(),
-      walletBalance: results[0].balance.toNumber(),
+      cardBalance: updatedCard.balance.toNumber(),
+      walletBalance: updatedWallet.balance.toNumber(),
     });
   } catch {
     return NextResponse.json({ error: "Failed to fund card" }, { status: 500 });

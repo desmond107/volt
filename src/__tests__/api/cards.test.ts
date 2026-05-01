@@ -202,11 +202,10 @@ describe("POST /api/cards/[id]/fund", () => {
       id: "card-1", userId: "user-1", label: "Travel",
       wallet: { id: "w1", balance: new Prisma.Decimal(500), asset: "USDC" },
     } as never);
-    vi.mocked(prisma.$transaction).mockResolvedValue([
-      { id: "w1", balance: new Prisma.Decimal(450) },
-      { id: "card-1", balance: new Prisma.Decimal(50) },
-      { id: "tx1" },
-    ] as never);
+    vi.mocked(prisma.$transaction).mockResolvedValue({
+      updatedWallet: { id: "w1", balance: new Prisma.Decimal(450) },
+      updatedCard: { id: "card-1", balance: new Prisma.Decimal(50) },
+    } as never);
 
     const { POST } = await import("@/app/api/cards/[id]/fund/route");
     const res = await POST(makeRequest({ amount: 50 }), { params: Promise.resolve({ id: "card-1" }) });
@@ -288,10 +287,9 @@ describe("POST /api/cards/[id]/pay", () => {
       id: "card-1", userId: "user-1", status: "ACTIVE",
       balance: new Prisma.Decimal(200), spendLimit: new Prisma.Decimal(500), spentAmount: new Prisma.Decimal(50), currency: "USD",
     } as never);
-    vi.mocked(prisma.$transaction).mockResolvedValue([
-      { id: "card-1", balance: new Prisma.Decimal(170), spentAmount: new Prisma.Decimal(80) },
-      { id: "tx1" },
-    ] as never);
+    vi.mocked(prisma.$transaction).mockResolvedValue(
+      { id: "card-1", balance: new Prisma.Decimal(170), spentAmount: new Prisma.Decimal(80) } as never
+    );
 
     const { POST } = await import("@/app/api/cards/[id]/pay/route");
     const res = await POST(

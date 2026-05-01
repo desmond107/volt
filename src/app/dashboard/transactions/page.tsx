@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from "react";
 import TopBar from "@/components/dashboard/TopBar";
 import { formatCurrency, formatDateTime, getTransactionColor, getStatusColor } from "@/lib/utils";
-import { ArrowDownRight, ArrowUpRight, Search, Filter } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, CreditCard, Search, Filter } from "lucide-react";
 
 interface Transaction {
   id: string;
@@ -19,7 +19,7 @@ interface Transaction {
   card?: { label: string; cardNumber: string } | null;
 }
 
-const TYPES = ["ALL", "DEPOSIT", "CARD_PAYMENT", "WITHDRAWAL", "TRANSFER", "CONVERSION"];
+const TYPES = ["ALL", "DEPOSIT", "CARD_PAYMENT", "WITHDRAWAL", "TRANSFER", "CARD_FUNDING", "CONVERSION"];
 
 export default function TransactionsPage() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -61,6 +61,7 @@ export default function TransactionsPage() {
     WITHDRAWAL: <ArrowUpRight className="w-4 h-4 text-orange-400" />,
     TRANSFER: <ArrowUpRight className="w-4 h-4 text-blue-400" />,
     CONVERSION: <ArrowUpRight className="w-4 h-4 text-violet-400" />,
+    CARD_FUNDING: <CreditCard className="w-4 h-4 text-blue-400" />,
   };
 
   return (
@@ -127,7 +128,7 @@ export default function TransactionsPage() {
                   </tr>
                 ) : (
                   filtered.map((t) => {
-                    const isCredit = t.type === "DEPOSIT";
+                    const isCredit = t.type === "DEPOSIT" || (t.type === "TRANSFER" && t.reference.endsWith("-IN"));
                     return (
                       <tr key={t.id} className="border-b border-[#0d2040] last:border-0 hover:bg-[#0d2040]/30 transition-colors">
                         <td className="px-5 py-4">

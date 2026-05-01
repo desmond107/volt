@@ -45,8 +45,11 @@ export async function POST(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  const { id } = await req.json();
-  await prisma.apiKey.update({ where: { id, userId: session.id }, data: { isActive: false } });
-  return NextResponse.json({ ok: true });
+  try {
+    const { id } = await req.json();
+    await prisma.apiKey.update({ where: { id, userId: session.id }, data: { isActive: false } });
+    return NextResponse.json({ ok: true });
+  } catch {
+    return NextResponse.json({ error: "Failed to revoke API key" }, { status: 500 });
+  }
 }

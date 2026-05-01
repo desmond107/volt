@@ -37,11 +37,10 @@ export async function POST(req: NextRequest) {
     const ref = `SEND-${Date.now()}`;
     const recipientName = to.user.name ?? to.user.email;
 
-    await prisma.$transaction([
-      prisma.wallet.update({ where: { id: fromWalletId }, data: { balance: { decrement: amount } } }),
-      prisma.wallet.update({ where: { id: to.id }, data: { balance: { increment: amount } } }),
-      // Sender's outgoing transaction
-      prisma.transaction.create({
+    await prisma.$transaction(async (tx) => {
+      await tx.wallet.update({ where: { id: fromWalletId }, data: { balance: { decrement: amount } } });
+      await tx.wallet.update({ where: { id: to.id }, data: { balance: { increment: amount } } });
+      await tx.transaction.create({
         data: {
           userId: session.id,
           walletId: fromWalletId,
@@ -54,9 +53,8 @@ export async function POST(req: NextRequest) {
           reference: `${ref}-OUT`,
           metadata: JSON.stringify({ direction: "out", recipientAddress: toAddress }),
         },
-      }),
-      // Recipient's incoming transaction
-      prisma.transaction.create({
+      });
+      await tx.transaction.create({
         data: {
           userId: to.userId,
           walletId: to.id,
@@ -69,8 +67,8 @@ export async function POST(req: NextRequest) {
           reference: `${ref}-IN`,
           metadata: JSON.stringify({ direction: "in", senderUserId: session.id }),
         },
-      }),
-    ]);
+      });
+    });
 
     return NextResponse.json({ success: true, recipientName });
   } catch {

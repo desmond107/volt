@@ -27,12 +27,12 @@ export async function POST(req: NextRequest) {
 
     const metadata = JSON.stringify({ paymentMethod: paymentMethod || "direct", cardBrand, cardLast4, mpesaPhone });
 
-    const [updatedWallet, transaction] = await prisma.$transaction([
-      prisma.wallet.update({
+    const { updatedWallet, transaction } = await prisma.$transaction(async (tx) => {
+      const updatedWallet = await tx.wallet.update({
         where: { id: walletId },
         data: { balance: { increment: amount } },
-      }),
-      prisma.transaction.create({
+      });
+      const transaction = await tx.transaction.create({
         data: {
           userId: session.id,
           walletId,
@@ -45,8 +45,9 @@ export async function POST(req: NextRequest) {
           reference: `DEP-${Date.now()}`,
           metadata,
         },
-      }),
-    ]);
+      });
+      return { updatedWallet, transaction };
+    });
 
     return NextResponse.json(serializeDecimals({ wallet: updatedWallet, transaction }));
   } catch {

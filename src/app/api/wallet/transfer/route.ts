@@ -30,10 +30,10 @@ export async function POST(req: NextRequest) {
 
     const ref = `TRF-${Date.now()}`;
 
-    await prisma.$transaction([
-      prisma.wallet.update({ where: { id: fromWalletId }, data: { balance: { decrement: amount } } }),
-      prisma.wallet.update({ where: { id: toWalletId }, data: { balance: { increment: amount } } }),
-      prisma.transaction.create({
+    await prisma.$transaction(async (tx) => {
+      await tx.wallet.update({ where: { id: fromWalletId }, data: { balance: { decrement: amount } } });
+      await tx.wallet.update({ where: { id: toWalletId }, data: { balance: { increment: amount } } });
+      await tx.transaction.create({
         data: {
           userId: session.id,
           walletId: fromWalletId,
@@ -45,8 +45,8 @@ export async function POST(req: NextRequest) {
           description: `Transfer ${from.asset} → ${to.asset}`,
           reference: `${ref}-OUT`,
         },
-      }),
-      prisma.transaction.create({
+      });
+      await tx.transaction.create({
         data: {
           userId: session.id,
           walletId: toWalletId,
@@ -58,8 +58,8 @@ export async function POST(req: NextRequest) {
           description: `Transfer ${from.asset} → ${to.asset}`,
           reference: `${ref}-IN`,
         },
-      }),
-    ]);
+      });
+    });
 
     return NextResponse.json({ success: true });
   } catch {

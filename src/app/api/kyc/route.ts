@@ -25,9 +25,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Document type and country are required" }, { status: 400 });
     }
 
-    // Simulate automatic KYC approval for demo
-    await prisma.$transaction([
-      prisma.kycDocument.create({
+    await prisma.$transaction(async (tx) => {
+      await tx.kycDocument.create({
         data: {
           userId: session.id,
           docType,
@@ -35,12 +34,12 @@ export async function POST(req: NextRequest) {
           country,
           status: "SUBMITTED",
         },
-      }),
-      prisma.user.update({
+      });
+      await tx.user.update({
         where: { id: session.id },
         data: { kycStatus: "VERIFIED", kycLevel: 1 },
-      }),
-    ]);
+      });
+    });
 
     return NextResponse.json({ success: true, kycStatus: "VERIFIED" });
   } catch {

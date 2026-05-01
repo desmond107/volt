@@ -123,7 +123,7 @@ describe("POST /api/wallet/send", () => {
         id: "w2", userId: "user-2", address: "0xrecipient", asset: "USDC",
         user: { id: "user-2", name: "Alice", email: "alice@example.com" },
       } as never);
-    vi.mocked(prisma.$transaction).mockResolvedValue([{}, {}, {}, {}] as never);
+    vi.mocked(prisma.$transaction).mockResolvedValue(undefined as never);
 
     const { POST } = await import("@/app/api/wallet/send/route");
     const res = await POST(makeReq({ fromWalletId: "w1", toAddress: "0xrecipient", amount: 50 }));
@@ -132,8 +132,8 @@ describe("POST /api/wallet/send", () => {
     expect(json.success).toBe(true);
     expect(json.recipientName).toBe("Alice");
 
-    const txOps = vi.mocked(prisma.$transaction).mock.calls[0][0] as unknown[];
-    expect(txOps).toHaveLength(4);
+    const fn = vi.mocked(prisma.$transaction).mock.calls[0][0];
+    expect(typeof fn).toBe("function");
   });
 });
 

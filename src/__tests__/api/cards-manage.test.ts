@@ -171,10 +171,10 @@ describe("DELETE /api/cards/[id]", () => {
     const { prisma } = await import("@/lib/prisma");
     vi.mocked(getSession).mockResolvedValue(mockSession);
     vi.mocked(prisma.virtualCard.findUnique).mockResolvedValue({
-      id: "card-1", userId: "user-1", balance: new Prisma.Decimal(75), label: "Travel Card",
-      wallet: { id: "w1", asset: "USDC", balance: new Prisma.Decimal(100) },
+      id: "card-1", userId: "user-1", balance: new Prisma.Decimal(75), label: "Travel Card", walletId: "w1",
     } as never);
-    vi.mocked(prisma.$transaction).mockResolvedValue([{}, {}, {}] as never);
+    vi.mocked(prisma.wallet.findUnique).mockResolvedValue({ id: "w1", asset: "USDC" } as never);
+    vi.mocked(prisma.$transaction).mockResolvedValue(undefined as never);
 
     const { DELETE } = await import("@/app/api/cards/[id]/route");
     const res = await DELETE(deleteReq(), { params: Promise.resolve({ id: "card-1" }) });
@@ -189,15 +189,15 @@ describe("DELETE /api/cards/[id]", () => {
     const { prisma } = await import("@/lib/prisma");
     vi.mocked(getSession).mockResolvedValue(mockSession);
     vi.mocked(prisma.virtualCard.findUnique).mockResolvedValue({
-      id: "card-1", userId: "user-1", balance: new Prisma.Decimal(30), label: "Shopping",
-      wallet: { id: "w1", asset: "USDT", balance: new Prisma.Decimal(200) },
+      id: "card-1", userId: "user-1", balance: new Prisma.Decimal(30), label: "Shopping", walletId: "w1",
     } as never);
-    vi.mocked(prisma.$transaction).mockResolvedValue([{}, {}, {}] as never);
+    vi.mocked(prisma.wallet.findUnique).mockResolvedValue({ id: "w1", asset: "USDT" } as never);
+    vi.mocked(prisma.$transaction).mockResolvedValue(undefined as never);
 
     const { DELETE } = await import("@/app/api/cards/[id]/route");
     await DELETE(deleteReq(), { params: Promise.resolve({ id: "card-1" }) });
 
-    const txArgs = vi.mocked(prisma.$transaction).mock.calls[0][0] as unknown[];
-    expect(txArgs).toHaveLength(3);
+    const fn = vi.mocked(prisma.$transaction).mock.calls[0][0];
+    expect(typeof fn).toBe("function");
   });
 });

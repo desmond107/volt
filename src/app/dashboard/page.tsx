@@ -194,7 +194,7 @@ export default async function DashboardPage() {
           ) : (
             <div className="space-y-3">
               {recentTxns.map((t) => {
-                const isCredit = ["DEPOSIT"].includes(t.type);
+                const isCredit = t.type === "DEPOSIT" || (t.type === "TRANSFER" && t.reference?.endsWith("-IN"));
                 return (
                   <div key={t.id} className="flex items-center justify-between py-2 border-b border-[#0d2040] last:border-0">
                     <div className="flex items-center gap-3">

@@ -35,15 +35,15 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       return NextResponse.json({ error: `Exceeds spend limit (remaining: $${remaining.toFixed(2)})` }, { status: 400 });
     }
 
-    const results = await prisma.$transaction([
-      prisma.virtualCard.update({
+    const updatedCard = await prisma.$transaction(async (tx) => {
+      const updated = await tx.virtualCard.update({
         where: { id },
         data: {
           balance: { decrement: amount },
           spentAmount: { increment: amount },
         },
-      }),
-      prisma.transaction.create({
+      });
+      await tx.transaction.create({
         data: {
           userId: session.id,
           cardId: id,
@@ -55,13 +55,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
           category: category || null,
           description: `Card payment to ${merchant || "merchant"}`,
         },
-      }),
-    ]);
+      });
+      return updated;
+    });
 
     return NextResponse.json({
       ok: true,
-      balance: results[0].balance.toNumber(),
-      spentAmount: results[0].spentAmount.toNumber(),
+      balance: updatedCard.balance.toNumber(),
+      spentAmount: updatedCard.spentAmount.toNumber(),
     });
   } catch {
     return NextResponse.json({ error: "Payment failed" }, { status: 500 });

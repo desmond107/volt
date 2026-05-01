@@ -1,23 +1,31 @@
 import { clsx, type ClassValue } from "clsx";
-import { Prisma } from "@prisma/client";
 
 export function cn(...inputs: ClassValue[]) {
   return clsx(inputs);
 }
 
-// Recursively convert Prisma.Decimal to number so NextResponse.json() emits
-// numeric values instead of strings (Decimal.toJSON() returns a string).
-export function serializeDecimals<T>(obj: T): T {
-  if (obj instanceof Prisma.Decimal) return obj.toNumber() as unknown as T;
-  if (Array.isArray(obj)) return obj.map(serializeDecimals) as unknown as T;
+type DecimalLike = { toNumber(): number; toFixed(dp?: number): string };
+
+type Serialized<T> =
+  T extends DecimalLike ? number :
+  T extends Date ? Date :
+  T extends Array<infer U> ? Serialized<U>[] :
+  T extends object ? { [K in keyof T]: Serialized<T[K]> } :
+  T;
+
+export function serializeDecimals<T>(obj: T): Serialized<T> {
   if (obj !== null && typeof obj === "object") {
-    const out: Record<string, unknown> = {};
-    for (const key of Object.keys(obj as object)) {
-      out[key] = serializeDecimals((obj as Record<string, unknown>)[key]);
+    const o = obj as Record<string, unknown>;
+    if (typeof o.toNumber === "function" && typeof o.toFixed === "function") {
+      return (o.toNumber as () => number)() as Serialized<T>;
     }
-    return out as T;
+    if (Array.isArray(obj)) return (obj as unknown[]).map(serializeDecimals) as Serialized<T>;
+    if (obj instanceof Date) return obj as Serialized<T>;
+    const out: Record<string, unknown> = {};
+    for (const key of Object.keys(o)) out[key] = serializeDecimals(o[key]);
+    return out as Serialized<T>;
   }
-  return obj;
+  return obj as Serialized<T>;
 }
 
 const CRYPTO_CURRENCIES = new Set(["USDC", "USDT", "DAI", "ETH", "BTC", "BNB"]);
@@ -78,6 +86,7 @@ export function getTransactionColor(type: string) {
     case "WITHDRAWAL": return "text-orange-400";
     case "TRANSFER": return "text-blue-400";
     case "CONVERSION": return "text-violet-400";
+    case "CARD_FUNDING": return "text-blue-400";
     default: return "text-gray-400";
   }
 }

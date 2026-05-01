@@ -399,9 +399,13 @@ export default function CardsPage() {
     setActionLoading(id);
     const res = await fetch(`/api/cards/${id}`, { method: "DELETE" });
     const data = await res.json();
-    await fetchCards();
     setActionLoading(null);
     setDeleteConfirm(null);
+    if (!res.ok) {
+      alert(data.error ?? "Failed to delete card. Please try again.");
+      return;
+    }
+    await fetchCards();
     if (data.refunded > 0) {
       alert(`Card deleted. $${data.refunded.toFixed(2)} has been refunded to your wallet.`);
     }
