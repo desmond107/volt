@@ -97,6 +97,63 @@ describe("POST /api/auth/login", () => {
     expect(setSession).toHaveBeenCalledWith("user-1");
   });
 
+  it("increments failedLoginAttempts on wrong password", async () => {
+    const { prisma } = await import("@/lib/prisma");
+    const bcrypt = await import("bcryptjs");
+    const hash = await bcrypt.hash("correct", 12);
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      id: "1", email: "a@b.com", name: "A", passwordHash: hash,
+      kycStatus: "PENDING", kycLevel: 0,
+      failedLoginAttempts: 2, loginLockedUntil: null,
+    } as never);
+    vi.mocked(prisma.user.update).mockResolvedValue({} as never);
+
+    const { POST } = await import("@/app/api/auth/login/route");
+    await POST(makeRequest({ email: "a@b.com", password: "wrong" }));
+
+    expect(prisma.user.update).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ failedLoginAttempts: 3 }) })
+    );
+  });
+
+  it("locks account after 5 failed attempts", async () => {
+    const { prisma } = await import("@/lib/prisma");
+    const bcrypt = await import("bcryptjs");
+    const hash = await bcrypt.hash("correct", 12);
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      id: "1", email: "a@b.com", name: "A", passwordHash: hash,
+      kycStatus: "PENDING", kycLevel: 0,
+      failedLoginAttempts: 4, loginLockedUntil: null,
+    } as never);
+    vi.mocked(prisma.user.update).mockResolvedValue({} as never);
+
+    const { POST } = await import("@/app/api/auth/login/route");
+    const res = await POST(makeRequest({ email: "a@b.com", password: "wrong" }));
+    expect(res.status).toBe(429);
+
+    const updateCall = vi.mocked(prisma.user.update).mock.calls[0][0];
+    expect(updateCall.data).toHaveProperty("loginLockedUntil");
+  });
+
+  it("resets failedLoginAttempts on successful login", async () => {
+    const { prisma } = await import("@/lib/prisma");
+    const bcrypt = await import("bcryptjs");
+    const hash = await bcrypt.hash("correct", 12);
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      id: "1", email: "a@b.com", name: "A", passwordHash: hash,
+      kycStatus: "PENDING", kycLevel: 0,
+      failedLoginAttempts: 3, loginLockedUntil: null,
+    } as never);
+    vi.mocked(prisma.user.update).mockResolvedValue({} as never);
+
+    const { POST } = await import("@/app/api/auth/login/route");
+    await POST(makeRequest({ email: "a@b.com", password: "correct" }));
+
+    expect(prisma.user.update).toHaveBeenCalledWith(
+      expect.objectContaining({ data: { failedLoginAttempts: 0, loginLockedUntil: null } })
+    );
+  });
+
   it("normalizes email to lowercase", async () => {
     const { prisma } = await import("@/lib/prisma");
     vi.mocked(prisma.user.findUnique).mockResolvedValue(null);
