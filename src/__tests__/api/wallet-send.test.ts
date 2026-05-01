@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
+import { Prisma } from "@prisma/client";
 
 const mockSession = { id: "user-1", email: "user@example.com", name: "Test User", kycStatus: "VERIFIED", kycLevel: 1 };
 
@@ -99,7 +100,7 @@ describe("POST /api/wallet/send", () => {
     const { prisma } = await import("@/lib/prisma");
     vi.mocked(getSession).mockResolvedValue(mockSession);
     vi.mocked(prisma.wallet.findUnique)
-      .mockResolvedValueOnce({ id: "w1", userId: "user-1", asset: "USDC", balance: 5 } as never)
+      .mockResolvedValueOnce({ id: "w1", userId: "user-1", asset: "USDC", balance: new Prisma.Decimal(5) } as never)
       .mockResolvedValueOnce({
         id: "w2", userId: "user-2", address: "0xrecipient",
         user: { id: "user-2", name: "Alice", email: "alice@example.com" },
@@ -117,7 +118,7 @@ describe("POST /api/wallet/send", () => {
     const { prisma } = await import("@/lib/prisma");
     vi.mocked(getSession).mockResolvedValue(mockSession);
     vi.mocked(prisma.wallet.findUnique)
-      .mockResolvedValueOnce({ id: "w1", userId: "user-1", asset: "USDC", balance: 500 } as never)
+      .mockResolvedValueOnce({ id: "w1", userId: "user-1", asset: "USDC", balance: new Prisma.Decimal(500) } as never)
       .mockResolvedValueOnce({
         id: "w2", userId: "user-2", address: "0xrecipient", asset: "USDC",
         user: { id: "user-2", name: "Alice", email: "alice@example.com" },

@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
     if (!to || to.userId !== session.id) {
       return NextResponse.json({ error: "Destination wallet not found" }, { status: 404 });
     }
-    if (from.balance < amount) {
+    if (from.balance.toNumber() < amount) {
       return NextResponse.json({ error: "Insufficient balance" }, { status: 400 });
     }
 

@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
+import { Prisma } from "@prisma/client";
 
 const mockSession = { id: "user-1", email: "user@example.com", name: "Test User", kycStatus: "VERIFIED", kycLevel: 1 };
 
@@ -160,8 +161,8 @@ describe("POST /api/wallet/transfer", () => {
     const { prisma } = await import("@/lib/prisma");
     vi.mocked(getSession).mockResolvedValue(mockSession);
     vi.mocked(prisma.wallet.findUnique)
-      .mockResolvedValueOnce({ id: "w1", userId: "user-1", asset: "USDC", balance: 10 } as never)
-      .mockResolvedValueOnce({ id: "w2", userId: "user-1", asset: "USDT", balance: 0 } as never);
+      .mockResolvedValueOnce({ id: "w1", userId: "user-1", asset: "USDC", balance: new Prisma.Decimal(10) } as never)
+      .mockResolvedValueOnce({ id: "w2", userId: "user-1", asset: "USDT", balance: new Prisma.Decimal(0) } as never);
 
     const { POST } = await import("@/app/api/wallet/transfer/route");
     const res = await POST(makeRequest({ fromWalletId: "w1", toWalletId: "w2", amount: 100 }));
@@ -175,8 +176,8 @@ describe("POST /api/wallet/transfer", () => {
     const { prisma } = await import("@/lib/prisma");
     vi.mocked(getSession).mockResolvedValue(mockSession);
     vi.mocked(prisma.wallet.findUnique)
-      .mockResolvedValueOnce({ id: "w1", userId: "user-1", asset: "USDC", balance: 500 } as never)
-      .mockResolvedValueOnce({ id: "w2", userId: "user-1", asset: "USDT", balance: 0 } as never);
+      .mockResolvedValueOnce({ id: "w1", userId: "user-1", asset: "USDC", balance: new Prisma.Decimal(500) } as never)
+      .mockResolvedValueOnce({ id: "w2", userId: "user-1", asset: "USDT", balance: new Prisma.Decimal(0) } as never);
     vi.mocked(prisma.$transaction).mockResolvedValue([{}, {}, {}, {}] as never);
 
     const { POST } = await import("@/app/api/wallet/transfer/route");
@@ -191,8 +192,8 @@ describe("POST /api/wallet/transfer", () => {
     const { prisma } = await import("@/lib/prisma");
     vi.mocked(getSession).mockResolvedValue(mockSession);
     vi.mocked(prisma.wallet.findUnique)
-      .mockResolvedValueOnce({ id: "w1", userId: "user-1", asset: "USDC", balance: 500 } as never)
-      .mockResolvedValueOnce({ id: "w2", userId: "user-1", asset: "USDT", balance: 0 } as never);
+      .mockResolvedValueOnce({ id: "w1", userId: "user-1", asset: "USDC", balance: new Prisma.Decimal(500) } as never)
+      .mockResolvedValueOnce({ id: "w2", userId: "user-1", asset: "USDT", balance: new Prisma.Decimal(0) } as never);
     vi.mocked(prisma.$transaction).mockResolvedValue([{}, {}, {}, {}] as never);
 
     const { POST } = await import("@/app/api/wallet/transfer/route");

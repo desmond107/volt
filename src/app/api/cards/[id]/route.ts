@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
+import { serializeDecimals } from "@/lib/utils";
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await getSession();
@@ -34,7 +35,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       include: { wallet: { select: { id: true, asset: true, network: true, balance: true } } },
     });
 
-    return NextResponse.json({ card: updated });
+    return NextResponse.json({ card: serializeDecimals(updated) });
   } catch {
     return NextResponse.json({ error: "Failed to update card" }, { status: 500 });
   }
@@ -55,7 +56,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
       return NextResponse.json({ error: "Card not found" }, { status: 404 });
     }
 
-    const hasRefund = card.balance > 0 && !!card.wallet;
+    const hasRefund = card.balance.toNumber() > 0 && !!card.wallet;
 
     if (hasRefund && card.wallet) {
       await prisma.$transaction([
@@ -84,7 +85,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
 
     return NextResponse.json({
       ok: true,
-      refunded: card.balance > 0 && !!card.wallet ? card.balance : 0,
+      refunded: card.balance.toNumber() > 0 && !!card.wallet ? card.balance.toNumber() : 0,
     });
   } catch {
     return NextResponse.json({ error: "Failed to delete card" }, { status: 500 });

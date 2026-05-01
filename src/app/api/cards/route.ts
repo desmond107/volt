@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
-import { generateCardNumber, generateCVV } from "@/lib/utils";
+import { generateCardNumber, generateCVV, serializeDecimals } from "@/lib/utils";
 
 export async function GET() {
   const session = await getSession();
@@ -13,7 +13,7 @@ export async function GET() {
     include: { wallet: { select: { id: true, asset: true, network: true, balance: true } } },
   });
 
-  return NextResponse.json({ cards });
+  return NextResponse.json({ cards: serializeDecimals(cards) });
 }
 
 export async function POST(req: NextRequest) {
@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    return NextResponse.json({ card });
+    return NextResponse.json({ card: serializeDecimals(card) });
   } catch {
     return NextResponse.json({ error: "Failed to create card" }, { status: 500 });
   }

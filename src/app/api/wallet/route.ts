@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
+import { serializeDecimals } from "@/lib/utils";
 
 export async function GET() {
   const session = await getSession();
@@ -12,7 +13,7 @@ export async function GET() {
       orderBy: { createdAt: "asc" },
     });
 
-    return NextResponse.json({ wallets });
+    return NextResponse.json({ wallets: serializeDecimals(wallets) });
   } catch {
     return NextResponse.json({ error: "Failed to fetch wallets" }, { status: 500 });
   }

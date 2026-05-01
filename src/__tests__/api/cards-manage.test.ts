@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
+import { Prisma } from "@prisma/client";
 
 const mockSession = { id: "user-1", email: "user@example.com", name: "Test User", kycStatus: "VERIFIED", kycLevel: 1 };
 
@@ -134,7 +135,7 @@ describe("DELETE /api/cards/[id]", () => {
     const { prisma } = await import("@/lib/prisma");
     vi.mocked(getSession).mockResolvedValue(mockSession);
     vi.mocked(prisma.virtualCard.findUnique).mockResolvedValue({
-      id: "card-1", userId: "user-1", balance: 0, wallet: null, label: "My Card",
+      id: "card-1", userId: "user-1", balance: new Prisma.Decimal(0), wallet: null, label: "My Card",
     } as never);
     vi.mocked(prisma.virtualCard.update).mockResolvedValue({} as never);
 
@@ -154,7 +155,7 @@ describe("DELETE /api/cards/[id]", () => {
     const { prisma } = await import("@/lib/prisma");
     vi.mocked(getSession).mockResolvedValue(mockSession);
     vi.mocked(prisma.virtualCard.findUnique).mockResolvedValue({
-      id: "card-1", userId: "user-1", balance: 50, wallet: null, label: "My Card",
+      id: "card-1", userId: "user-1", balance: new Prisma.Decimal(50), wallet: null, label: "My Card",
     } as never);
     vi.mocked(prisma.virtualCard.update).mockResolvedValue({} as never);
 
@@ -170,8 +171,8 @@ describe("DELETE /api/cards/[id]", () => {
     const { prisma } = await import("@/lib/prisma");
     vi.mocked(getSession).mockResolvedValue(mockSession);
     vi.mocked(prisma.virtualCard.findUnique).mockResolvedValue({
-      id: "card-1", userId: "user-1", balance: 75, label: "Travel Card",
-      wallet: { id: "w1", asset: "USDC", balance: 100 },
+      id: "card-1", userId: "user-1", balance: new Prisma.Decimal(75), label: "Travel Card",
+      wallet: { id: "w1", asset: "USDC", balance: new Prisma.Decimal(100) },
     } as never);
     vi.mocked(prisma.$transaction).mockResolvedValue([{}, {}, {}] as never);
 
@@ -188,8 +189,8 @@ describe("DELETE /api/cards/[id]", () => {
     const { prisma } = await import("@/lib/prisma");
     vi.mocked(getSession).mockResolvedValue(mockSession);
     vi.mocked(prisma.virtualCard.findUnique).mockResolvedValue({
-      id: "card-1", userId: "user-1", balance: 30, label: "Shopping",
-      wallet: { id: "w1", asset: "USDT", balance: 200 },
+      id: "card-1", userId: "user-1", balance: new Prisma.Decimal(30), label: "Shopping",
+      wallet: { id: "w1", asset: "USDT", balance: new Prisma.Decimal(200) },
     } as never);
     vi.mocked(prisma.$transaction).mockResolvedValue([{}, {}, {}] as never);
 

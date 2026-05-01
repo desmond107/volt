@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
+import { serializeDecimals } from "@/lib/utils";
 
 export async function POST(req: NextRequest) {
   const session = await getSession();
@@ -47,7 +48,7 @@ export async function POST(req: NextRequest) {
       }),
     ]);
 
-    return NextResponse.json({ wallet: updatedWallet, transaction });
+    return NextResponse.json(serializeDecimals({ wallet: updatedWallet, transaction }));
   } catch {
     return NextResponse.json({ error: "Deposit failed" }, { status: 500 });
   }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
+import { serializeDecimals } from "@/lib/utils";
 
 export async function GET(req: NextRequest) {
   const session = await getSession();
@@ -29,7 +30,7 @@ export async function GET(req: NextRequest) {
       prisma.transaction.count({ where }),
     ]);
 
-    return NextResponse.json({ transactions, total, page, pages: Math.ceil(total / limit) });
+    return NextResponse.json({ transactions: serializeDecimals(transactions), total, page, pages: Math.ceil(total / limit) });
   } catch {
     return NextResponse.json({ error: "Failed to fetch transactions" }, { status: 500 });
   }

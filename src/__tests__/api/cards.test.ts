@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
+import { Prisma } from "@prisma/client";
 
 const mockSession = { id: "user-1", email: "user@example.com", name: "Card User", kycStatus: "VERIFIED", kycLevel: 1 };
 const unverifiedSession = { ...mockSession, kycStatus: "PENDING" };
@@ -183,7 +184,7 @@ describe("POST /api/cards/[id]/fund", () => {
     vi.mocked(getSession).mockResolvedValue(mockSession);
     vi.mocked(prisma.virtualCard.findUnique).mockResolvedValue({
       id: "card-1", userId: "user-1",
-      wallet: { id: "w1", balance: 20, asset: "USDC" },
+      wallet: { id: "w1", balance: new Prisma.Decimal(20), asset: "USDC" },
     } as never);
 
     const { POST } = await import("@/app/api/cards/[id]/fund/route");
@@ -199,11 +200,11 @@ describe("POST /api/cards/[id]/fund", () => {
     vi.mocked(getSession).mockResolvedValue(mockSession);
     vi.mocked(prisma.virtualCard.findUnique).mockResolvedValue({
       id: "card-1", userId: "user-1", label: "Travel",
-      wallet: { id: "w1", balance: 500, asset: "USDC" },
+      wallet: { id: "w1", balance: new Prisma.Decimal(500), asset: "USDC" },
     } as never);
     vi.mocked(prisma.$transaction).mockResolvedValue([
-      { id: "w1", balance: 450 },
-      { id: "card-1", balance: 50 },
+      { id: "w1", balance: new Prisma.Decimal(450) },
+      { id: "card-1", balance: new Prisma.Decimal(50) },
       { id: "tx1" },
     ] as never);
 
@@ -253,7 +254,7 @@ describe("POST /api/cards/[id]/pay", () => {
     vi.mocked(getSession).mockResolvedValue(mockSession);
     vi.mocked(prisma.virtualCard.findUnique).mockResolvedValue({
       id: "card-1", userId: "user-1", status: "ACTIVE",
-      balance: 10, spendLimit: 500, spentAmount: 0, currency: "USD",
+      balance: new Prisma.Decimal(10), spendLimit: new Prisma.Decimal(500), spentAmount: new Prisma.Decimal(0), currency: "USD",
     } as never);
 
     const { POST } = await import("@/app/api/cards/[id]/pay/route");
@@ -269,7 +270,7 @@ describe("POST /api/cards/[id]/pay", () => {
     vi.mocked(getSession).mockResolvedValue(mockSession);
     vi.mocked(prisma.virtualCard.findUnique).mockResolvedValue({
       id: "card-1", userId: "user-1", status: "ACTIVE",
-      balance: 1000, spendLimit: 100, spentAmount: 90, currency: "USD",
+      balance: new Prisma.Decimal(1000), spendLimit: new Prisma.Decimal(100), spentAmount: new Prisma.Decimal(90), currency: "USD",
     } as never);
 
     const { POST } = await import("@/app/api/cards/[id]/pay/route");
@@ -285,10 +286,10 @@ describe("POST /api/cards/[id]/pay", () => {
     vi.mocked(getSession).mockResolvedValue(mockSession);
     vi.mocked(prisma.virtualCard.findUnique).mockResolvedValue({
       id: "card-1", userId: "user-1", status: "ACTIVE",
-      balance: 200, spendLimit: 500, spentAmount: 50, currency: "USD",
+      balance: new Prisma.Decimal(200), spendLimit: new Prisma.Decimal(500), spentAmount: new Prisma.Decimal(50), currency: "USD",
     } as never);
     vi.mocked(prisma.$transaction).mockResolvedValue([
-      { id: "card-1", balance: 170, spentAmount: 80 },
+      { id: "card-1", balance: new Prisma.Decimal(170), spentAmount: new Prisma.Decimal(80) },
       { id: "tx1" },
     ] as never);
 

@@ -1,7 +1,23 @@
 import { clsx, type ClassValue } from "clsx";
+import { Prisma } from "@prisma/client";
 
 export function cn(...inputs: ClassValue[]) {
   return clsx(inputs);
+}
+
+// Recursively convert Prisma.Decimal to number so NextResponse.json() emits
+// numeric values instead of strings (Decimal.toJSON() returns a string).
+export function serializeDecimals<T>(obj: T): T {
+  if (obj instanceof Prisma.Decimal) return obj.toNumber() as unknown as T;
+  if (Array.isArray(obj)) return obj.map(serializeDecimals) as unknown as T;
+  if (obj !== null && typeof obj === "object") {
+    const out: Record<string, unknown> = {};
+    for (const key of Object.keys(obj as object)) {
+      out[key] = serializeDecimals((obj as Record<string, unknown>)[key]);
+    }
+    return out as T;
+  }
+  return obj;
 }
 
 const CRYPTO_CURRENCIES = new Set(["USDC", "USDT", "DAI", "ETH", "BTC", "BNB"]);

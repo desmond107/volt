@@ -25,7 +25,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     if (!card.wallet) {
       return NextResponse.json({ error: "No wallet linked to this card" }, { status: 400 });
     }
-    if (card.wallet.balance < amount) {
+    if (card.wallet.balance.toNumber() < amount) {
       return NextResponse.json({ error: "Insufficient wallet balance" }, { status: 400 });
     }
 
@@ -54,8 +54,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
     return NextResponse.json({
       ok: true,
-      cardBalance: results[1].balance,
-      walletBalance: results[0].balance,
+      cardBalance: results[1].balance.toNumber(),
+      walletBalance: results[0].balance.toNumber(),
     });
   } catch {
     return NextResponse.json({ error: "Failed to fund card" }, { status: 500 });

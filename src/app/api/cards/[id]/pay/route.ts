@@ -24,11 +24,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     if (card.status !== "ACTIVE") {
       return NextResponse.json({ error: "Card is not active" }, { status: 400 });
     }
-    if (card.balance < amount) {
-      return NextResponse.json({ error: `Insufficient card balance (available: $${card.balance.toFixed(2)})` }, { status: 400 });
+    const cardBalance = card.balance.toNumber();
+    const spentAmount = card.spentAmount.toNumber();
+    const spendLimit = card.spendLimit.toNumber();
+    if (cardBalance < amount) {
+      return NextResponse.json({ error: `Insufficient card balance (available: $${cardBalance.toFixed(2)})` }, { status: 400 });
     }
-    if (card.spentAmount + amount > card.spendLimit) {
-      const remaining = card.spendLimit - card.spentAmount;
+    if (spentAmount + amount > spendLimit) {
+      const remaining = spendLimit - spentAmount;
       return NextResponse.json({ error: `Exceeds spend limit (remaining: $${remaining.toFixed(2)})` }, { status: 400 });
     }
 
@@ -57,8 +60,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
     return NextResponse.json({
       ok: true,
-      balance: results[0].balance,
-      spentAmount: results[0].spentAmount,
+      balance: results[0].balance.toNumber(),
+      spentAmount: results[0].spentAmount.toNumber(),
     });
   } catch {
     return NextResponse.json({ error: "Payment failed" }, { status: 500 });

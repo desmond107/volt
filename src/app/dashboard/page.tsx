@@ -28,11 +28,11 @@ export default async function DashboardPage() {
     }),
   ]);
 
-  const totalBalance = wallets.reduce((sum, w) => sum + w.balance, 0);
+  const totalBalance = wallets.reduce((sum, w) => sum + w.balance.toNumber(), 0);
   const activeCards = cards.filter((c) => c.status === "ACTIVE").length;
   const monthlySpend = recentTxns
     .filter((t) => t.type === "CARD_PAYMENT" && t.status === "COMPLETED")
-    .reduce((sum, t) => sum + t.amount, 0);
+    .reduce((sum, t) => sum + t.amount.toNumber(), 0);
 
   return (
     <div className="flex flex-col flex-1 overflow-y-auto">
@@ -120,8 +120,8 @@ export default async function DashboardPage() {
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="text-sm font-semibold text-white">{formatCurrency(w.balance)}</div>
-                      <div className="text-xs text-[#6b88b0]">{w.balance.toFixed(2)} {w.asset}</div>
+                      <div className="text-sm font-semibold text-white">{formatCurrency(w.balance.toNumber())}</div>
+                      <div className="text-xs text-[#6b88b0]">{w.balance.toNumber().toFixed(2)} {w.asset}</div>
                     </div>
                   </div>
                 );
@@ -170,7 +170,7 @@ export default async function DashboardPage() {
                       <div className={`text-xs px-2 py-0.5 rounded-full ${c.status === "ACTIVE" ? "bg-emerald-500/10 text-emerald-400" : "bg-yellow-500/10 text-yellow-400"}`}>
                         {c.status}
                       </div>
-                      <div className="text-xs text-[#6b88b0] mt-0.5">{formatCurrency(c.spendLimit)} limit</div>
+                      <div className="text-xs text-[#6b88b0] mt-0.5">{formatCurrency(c.spendLimit.toNumber())} limit</div>
                     </div>
                   </div>
                 ))}
@@ -213,7 +213,7 @@ export default async function DashboardPage() {
                       </div>
                     </div>
                     <div className={`text-sm font-semibold ${getTransactionColor(t.type)}`}>
-                      {isCredit ? "+" : "-"}{formatCurrency(t.amount, t.currency)}
+                      {isCredit ? "+" : "-"}{formatCurrency(t.amount.toNumber(), t.currency)}
                     </div>
                   </div>
                 );

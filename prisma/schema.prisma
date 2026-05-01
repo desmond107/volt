@@ -32,7 +32,7 @@ model Wallet {
   asset       String
   network     String
   address     String      @unique
-  balance     Float       @default(0)
+  balance     Decimal     @default(0)
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
 
@@ -52,9 +52,9 @@ model VirtualCard {
   cardHolder    String
   brand         String   @default("VISA")
   status        String   @default("ACTIVE")
-  spendLimit    Float    @default(1000)
-  spentAmount   Float    @default(0)
-  balance       Float    @default(0)
+  spendLimit    Decimal  @default(1000)
+  spentAmount   Decimal  @default(0)
+  balance       Decimal  @default(0)
   nfcEnabled    Boolean  @default(true)
   currency      String   @default("USD")
   label         String?
@@ -74,8 +74,8 @@ model Transaction {
   cardId        String?
   type          String
   status        String   @default("PENDING")
-  amount        Float
-  fee           Float    @default(0)
+  amount        Decimal
+  fee           Decimal  @default(0)
   currency      String   @default("USD")
   merchant      String?
   merchantLogo  String?

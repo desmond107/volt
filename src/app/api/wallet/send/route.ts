@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
     if (to.userId === session.id) {
       return NextResponse.json({ error: "Cannot send to your own wallet" }, { status: 400 });
     }
-    if (from.balance < amount) {
+    if (from.balance.toNumber() < amount) {
       return NextResponse.json({ error: "Insufficient balance" }, { status: 400 });
     }
 
