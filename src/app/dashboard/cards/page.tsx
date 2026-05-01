@@ -335,6 +335,7 @@ export default function CardsPage() {
   const [fundError, setFundError] = useState("");
   const [card3dView, setCard3dView] = useState<VirtualCard | null>(null);
   const [payModal, setPayModal] = useState<VirtualCard | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<VirtualCard | null>(null);
 
   const [newCard, setNewCard] = useState({
     label: "",
@@ -395,11 +396,11 @@ export default function CardsPage() {
   };
 
   const handleTerminate = async (id: string) => {
-    if (!confirm("Delete this card? This cannot be undone.")) return;
     setActionLoading(id);
     await fetch(`/api/cards/${id}`, { method: "DELETE" });
     await fetchCards();
     setActionLoading(null);
+    setDeleteConfirm(null);
   };
 
   const handleLinkWallet = async (cardId: string, walletId: string | null) => {
@@ -573,63 +574,63 @@ export default function CardsPage() {
                   <div className="flex gap-2">
                     <button
                       onClick={() => setRevealedCard(revealed ? null : card.id)}
-                      className="flex-1 flex items-center justify-center gap-1.5 py-2 text-xs text-[#6b88b0] hover:text-white bg-[#061120] border border-[#0d2040] rounded-lg hover:border-blue-600/30 transition-colors"
+                      className="flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium text-blue-300 hover:text-white bg-[#061120] border border-blue-500/20 rounded-lg hover:border-blue-500/50 transition-colors"
                     >
-                      {revealed ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                      {revealed ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       {revealed ? "Hide" : "Reveal"}
                     </button>
                     <button
                       onClick={() => setLinkModal(card)}
-                      className="flex-1 flex items-center justify-center gap-1.5 py-2 text-xs text-[#6b88b0] hover:text-emerald-400 bg-[#061120] border border-[#0d2040] rounded-lg hover:border-emerald-500/30 transition-colors"
+                      className="flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium text-violet-300 hover:text-violet-100 bg-[#061120] border border-violet-500/20 rounded-lg hover:border-violet-500/50 transition-colors"
                     >
-                      <Link2 className="w-3.5 h-3.5" />
+                      <Link2 className="w-4 h-4" />
                       {card.wallet ? "Relink" : "Link"}
                     </button>
                     <button
                       onClick={() => { setFundModal(card); setFundAmount(""); setFundError(""); }}
                       disabled={!card.wallet}
                       title={!card.wallet ? "Link a wallet first" : "Fund this card"}
-                      className="flex-1 flex items-center justify-center gap-1.5 py-2 text-xs text-[#6b88b0] hover:text-amber-400 bg-[#061120] border border-[#0d2040] rounded-lg hover:border-amber-500/30 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                      className="flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium text-amber-300 hover:text-amber-100 bg-[#061120] border border-amber-500/20 rounded-lg hover:border-amber-500/50 transition-colors disabled:cursor-not-allowed disabled:text-amber-300/60"
                     >
-                      <ArrowDownLeft className="w-3.5 h-3.5" />
+                      <ArrowDownLeft className="w-4 h-4" />
                       Fund
                     </button>
                     <button
                       onClick={() => setPayModal(card)}
                       disabled={card.status !== "ACTIVE" || card.balance <= 0}
                       title={card.status !== "ACTIVE" ? "Card must be active to pay" : card.balance <= 0 ? "Fund the card first" : "Make a payment"}
-                      className="flex-1 flex items-center justify-center gap-1.5 py-2 text-xs text-[#6b88b0] hover:text-emerald-400 bg-[#061120] border border-[#0d2040] rounded-lg hover:border-emerald-500/30 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                      className="flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium text-emerald-300 hover:text-emerald-100 bg-[#061120] border border-emerald-500/20 rounded-lg hover:border-emerald-500/50 transition-colors disabled:cursor-not-allowed disabled:text-emerald-300/60"
                     >
-                      <ShoppingCart className="w-3.5 h-3.5" />
+                      <ShoppingCart className="w-4 h-4" />
                       Pay
                     </button>
                     <button
                       onClick={() => handleToggleNfc(card.id, card.nfcEnabled)}
                       disabled={actionLoading === card.id + "-nfc"}
                       title={card.nfcEnabled ? "Disable NFC" : "Enable NFC"}
-                      className={`flex-1 flex items-center justify-center gap-1.5 py-2 text-xs bg-[#061120] border rounded-lg transition-colors disabled:opacity-50 ${
+                      className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium bg-[#061120] border rounded-lg transition-colors disabled:opacity-50 ${
                         card.nfcEnabled
-                          ? "text-emerald-400 border-emerald-500/30 hover:text-red-400 hover:border-red-500/30"
-                          : "text-[#6b88b0] border-[#0d2040] hover:text-emerald-400 hover:border-emerald-500/30"
+                          ? "text-emerald-300 border-emerald-500/20 hover:text-red-300 hover:border-red-500/50"
+                          : "text-slate-300 border-slate-500/20 hover:text-emerald-300 hover:border-emerald-500/50"
                       }`}
                     >
-                      {card.nfcEnabled ? <Wifi className="w-3.5 h-3.5" /> : <WifiOff className="w-3.5 h-3.5" />}
+                      {card.nfcEnabled ? <Wifi className="w-4 h-4" /> : <WifiOff className="w-4 h-4" />}
                       NFC
                     </button>
                     <button
                       onClick={() => handleFreeze(card.id, card.status)}
                       disabled={actionLoading === card.id}
-                      className="flex-1 flex items-center justify-center gap-1.5 py-2 text-xs text-[#6b88b0] hover:text-blue-400 bg-[#061120] border border-[#0d2040] rounded-lg hover:border-blue-500/30 transition-colors disabled:opacity-50"
+                      className="flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium text-sky-300 hover:text-sky-100 bg-[#061120] border border-sky-500/20 rounded-lg hover:border-sky-500/50 transition-colors disabled:opacity-50"
                     >
-                      <Snowflake className="w-3.5 h-3.5" />
+                      <Snowflake className="w-4 h-4" />
                       {frozen ? "Unfreeze" : "Freeze"}
                     </button>
                     <button
-                      onClick={() => handleTerminate(card.id)}
+                      onClick={() => setDeleteConfirm(card)}
                       disabled={actionLoading === card.id}
-                      className="flex items-center justify-center p-2 text-[#6b88b0] hover:text-red-400 bg-[#061120] border border-[#0d2040] rounded-lg hover:border-red-500/30 transition-colors disabled:opacity-50"
+                      className="flex items-center justify-center p-3 text-red-400 hover:text-red-200 bg-[#061120] border border-red-500/20 rounded-lg hover:border-red-500/50 transition-colors disabled:opacity-50"
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
+                      <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
                 </div>
@@ -900,6 +901,46 @@ export default function CardsPage() {
                   Fund Card
                 </Button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete confirmation modal */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-[#071829] border border-red-500/20 rounded-2xl p-6 w-full max-w-sm shadow-2xl">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-red-500/10 flex items-center justify-center shrink-0">
+                <Trash2 className="w-5 h-5 text-red-400" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-white text-base">Delete Card</h3>
+                <p className="text-xs text-[#6b88b0] mt-0.5">{deleteConfirm.label}</p>
+              </div>
+            </div>
+
+            <p className="text-sm text-[#6b88b0] mb-2">
+              Are you sure you want to permanently delete this virtual card?
+            </p>
+            <p className="text-xs text-red-400/80 bg-red-500/5 border border-red-500/10 rounded-lg px-3 py-2 mb-6">
+              This action cannot be undone. Any remaining balance on the card will be lost.
+            </p>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setDeleteConfirm(null)}
+                className="flex-1 py-2.5 text-sm font-medium text-[#6b88b0] hover:text-white bg-[#061120] border border-[#0d2040] rounded-lg hover:border-[#1a3a5c] transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleTerminate(deleteConfirm.id)}
+                disabled={actionLoading === deleteConfirm.id}
+                className="flex-1 py-2.5 text-sm font-medium text-white bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 hover:border-red-500/60 rounded-lg transition-colors disabled:opacity-50"
+              >
+                {actionLoading === deleteConfirm.id ? "Deleting…" : "Yes, Delete Card"}
+              </button>
             </div>
           </div>
         </div>

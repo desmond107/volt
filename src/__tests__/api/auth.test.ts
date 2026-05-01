@@ -3,7 +3,7 @@ import { NextRequest } from "next/server";
 
 vi.mock("@/lib/prisma", () => ({
   prisma: {
-    user: { findUnique: vi.fn(), create: vi.fn() },
+    user: { findUnique: vi.fn(), create: vi.fn(), update: vi.fn() },
     wallet: { createMany: vi.fn() },
   },
 }));
@@ -51,11 +51,29 @@ describe("POST /api/auth/login", () => {
     vi.mocked(prisma.user.findUnique).mockResolvedValue({
       id: "1", email: "a@b.com", name: "A", passwordHash: hash,
       kycStatus: "PENDING", kycLevel: 0,
+      failedLoginAttempts: 0, loginLockedUntil: null,
     } as never);
+    vi.mocked(prisma.user.update).mockResolvedValue({} as never);
 
     const { POST } = await import("@/app/api/auth/login/route");
     const res = await POST(makeRequest({ email: "a@b.com", password: "wrong" }));
     expect(res.status).toBe(401);
+  });
+
+  it("returns 429 when account is locked", async () => {
+    const { prisma } = await import("@/lib/prisma");
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      id: "1", email: "a@b.com", name: "A", passwordHash: "hash",
+      kycStatus: "PENDING", kycLevel: 0,
+      failedLoginAttempts: 5,
+      loginLockedUntil: new Date(Date.now() + 10 * 60 * 1000),
+    } as never);
+
+    const { POST } = await import("@/app/api/auth/login/route");
+    const res = await POST(makeRequest({ email: "a@b.com", password: "any" }));
+    expect(res.status).toBe(429);
+    const json = await res.json();
+    expect(json.error).toMatch(/too many/i);
   });
 
   it("returns 200 and sets session on success", async () => {
@@ -67,7 +85,9 @@ describe("POST /api/auth/login", () => {
     vi.mocked(prisma.user.findUnique).mockResolvedValue({
       id: "user-1", email: "user@example.com", name: "Test User",
       passwordHash: hash, kycStatus: "VERIFIED", kycLevel: 1,
+      failedLoginAttempts: 0, loginLockedUntil: null,
     } as never);
+    vi.mocked(prisma.user.update).mockResolvedValue({} as never);
 
     const { POST } = await import("@/app/api/auth/login/route");
     const res = await POST(makeRequest({ email: "user@example.com", password: "password123" }));
