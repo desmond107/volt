@@ -397,10 +397,14 @@ export default function CardsPage() {
 
   const handleTerminate = async (id: string) => {
     setActionLoading(id);
-    await fetch(`/api/cards/${id}`, { method: "DELETE" });
+    const res = await fetch(`/api/cards/${id}`, { method: "DELETE" });
+    const data = await res.json();
     await fetchCards();
     setActionLoading(null);
     setDeleteConfirm(null);
+    if (data.refunded > 0) {
+      alert(`Card deleted. $${data.refunded.toFixed(2)} has been refunded to your wallet.`);
+    }
   };
 
   const handleLinkWallet = async (cardId: string, walletId: string | null) => {
@@ -923,9 +927,15 @@ export default function CardsPage() {
             <p className="text-sm text-[#6b88b0] mb-2">
               Are you sure you want to permanently delete this virtual card?
             </p>
-            <p className="text-xs text-red-400/80 bg-red-500/5 border border-red-500/10 rounded-lg px-3 py-2 mb-6">
-              This action cannot be undone. Any remaining balance on the card will be lost.
-            </p>
+            {deleteConfirm.balance > 0 && deleteConfirm.wallet ? (
+              <p className="text-xs text-emerald-400/90 bg-emerald-500/5 border border-emerald-500/10 rounded-lg px-3 py-2 mb-6">
+                ${deleteConfirm.balance.toFixed(2)} remaining on this card will be refunded to your linked wallet.
+              </p>
+            ) : (
+              <p className="text-xs text-red-400/80 bg-red-500/5 border border-red-500/10 rounded-lg px-3 py-2 mb-6">
+                This action cannot be undone. The card has no balance to refund.
+              </p>
+            )}
 
             <div className="flex gap-3">
               <button

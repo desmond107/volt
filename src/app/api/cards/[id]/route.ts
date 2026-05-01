@@ -47,17 +47,45 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   try {
     const { id } = await params;
 
-    const card = await prisma.virtualCard.findUnique({ where: { id } });
+    const card = await prisma.virtualCard.findUnique({
+      where: { id },
+      include: { wallet: true },
+    });
     if (!card || card.userId !== session.id) {
       return NextResponse.json({ error: "Card not found" }, { status: 404 });
     }
 
-    await prisma.virtualCard.update({
-      where: { id },
-      data: { status: "TERMINATED" },
-    });
+    const hasRefund = card.balance > 0 && !!card.wallet;
 
-    return NextResponse.json({ ok: true });
+    if (hasRefund && card.wallet) {
+      await prisma.$transaction([
+        prisma.virtualCard.update({ where: { id }, data: { status: "TERMINATED", balance: 0 } }),
+        prisma.wallet.update({
+          where: { id: card.wallet.id },
+          data: { balance: { increment: card.balance } },
+        }),
+        prisma.transaction.create({
+          data: {
+            userId: session.id,
+            walletId: card.wallet.id,
+            cardId: id,
+            type: "DEPOSIT",
+            status: "COMPLETED",
+            amount: card.balance,
+            currency: card.wallet.asset,
+            description: `Refund from deleted card: ${card.label ?? "Virtual Card"}`,
+            reference: `REFUND-${id}-${Date.now()}`,
+          },
+        }),
+      ]);
+    } else {
+      await prisma.virtualCard.update({ where: { id }, data: { status: "TERMINATED" } });
+    }
+
+    return NextResponse.json({
+      ok: true,
+      refunded: card.balance > 0 && !!card.wallet ? card.balance : 0,
+    });
   } catch {
     return NextResponse.json({ error: "Failed to delete card" }, { status: 500 });
   }
