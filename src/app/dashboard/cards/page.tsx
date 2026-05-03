@@ -55,20 +55,54 @@ const CATEGORIES = [
   "Entertainment", "Health", "Education", "Utilities", "Other",
 ];
 
+function NfcScreen({ onComplete, loading }: { onComplete: () => void; loading: boolean }) {
+  const onCompleteRef = useRef(onComplete);
+  onCompleteRef.current = onComplete;
+  useEffect(() => {
+    const t = setTimeout(() => onCompleteRef.current(), 2200);
+    return () => clearTimeout(t);
+  }, []);
+
+  return (
+    <div className="py-10 px-5 flex flex-col items-center gap-6">
+      <div className="relative w-36 h-36 flex items-center justify-center">
+        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-[0.08]" style={{ animationDuration: "1.8s" }} />
+        <span className="animate-ping absolute inline-flex h-4/5 w-4/5 rounded-full bg-emerald-400 opacity-[0.12]" style={{ animationDuration: "1.8s", animationDelay: "0.4s" }} />
+        <span className="animate-ping absolute inline-flex h-3/5 w-3/5 rounded-full bg-emerald-400 opacity-[0.18]" style={{ animationDuration: "1.8s", animationDelay: "0.8s" }} />
+        <div className="relative z-10 w-20 h-20 rounded-full bg-[#020c1b] border-2 border-emerald-400 flex items-center justify-center">
+          <Wifi className="w-9 h-9 text-emerald-400 animate-pulse" />
+        </div>
+      </div>
+      <div className="text-center">
+        <p className="text-white font-semibold text-base">{loading ? "Processing..." : "Hold near terminal"}</p>
+        <p className="text-[#6b88b0] text-sm mt-0.5">Contactless NFC payment</p>
+      </div>
+      <div className="flex gap-2">
+        {[0, 0.3, 0.6].map((delay, i) => (
+          <div key={i} className="w-2 h-2 rounded-full bg-emerald-400/70 animate-bounce" style={{ animationDelay: `${delay}s` }} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function PayModal({ card, onClose, onSuccess }: {
   card: VirtualCard;
   onClose: () => void;
   onSuccess: () => void;
 }) {
+  const [method, setMethod] = useState<"chip" | "nfc">("chip");
   const [merchant, setMerchant] = useState("");
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState("Shopping");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const [nfcTapping, setNfcTapping] = useState(false);
+  const [revealDetails, setRevealDetails] = useState(false);
   const theme = getTheme(card.color);
 
-  const handlePay = async () => {
+  const handlePay = async (paymentMethod: string) => {
     const amt = parseFloat(amount);
     if (!merchant.trim()) { setError("Enter a merchant name"); return; }
     if (isNaN(amt) || amt <= 0) { setError("Enter a valid amount"); return; }
@@ -77,22 +111,31 @@ function PayModal({ card, onClose, onSuccess }: {
     const res = await fetch(`/api/cards/${card.id}/pay`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ amount: amt, merchant: merchant.trim(), category }),
+      body: JSON.stringify({ amount: amt, merchant: merchant.trim(), category, paymentMethod }),
     });
     const data = await res.json();
     if (res.ok) {
       setSuccess(true);
-      setTimeout(() => { onSuccess(); onClose(); }, 2000);
+      setTimeout(() => { onSuccess(); onClose(); }, 2500);
     } else {
       setError(data.error ?? "Payment failed");
+      setNfcTapping(false);
     }
     setLoading(false);
+  };
+
+  const handleNfcTap = () => {
+    const amt = parseFloat(amount);
+    if (!merchant.trim()) { setError("Enter a merchant name"); return; }
+    if (isNaN(amt) || amt <= 0) { setError("Enter a valid amount"); return; }
+    setError("");
+    setNfcTapping(true);
   };
 
   return (
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div className="bg-[#061120] border border-[#0d2040] rounded-2xl w-full max-w-sm overflow-hidden">
-        {/* Card preview header */}
+        {/* Card header */}
         <div className="p-5 relative overflow-hidden" style={{ background: theme.gradient }}>
           <div className="absolute inset-0 opacity-[0.04]"
             style={{ backgroundImage: "linear-gradient(white 1px,transparent 1px),linear-gradient(90deg,white 1px,transparent 1px)", backgroundSize: "20px 20px" }} />
@@ -107,9 +150,11 @@ function PayModal({ card, onClose, onSuccess }: {
               <p className="text-sm font-bold" style={{ color: theme.accent }}>{formatCurrency(card.balance)}</p>
             </div>
           </div>
-          <button onClick={onClose} className="absolute top-3 right-3 text-white/50 hover:text-white">
-            <X className="w-4 h-4" />
-          </button>
+          {!success && !nfcTapping && (
+            <button onClick={onClose} className="absolute top-3 right-3 text-white/50 hover:text-white">
+              <X className="w-4 h-4" />
+            </button>
+          )}
         </div>
 
         {success ? (
@@ -118,82 +163,162 @@ function PayModal({ card, onClose, onSuccess }: {
             <p className="text-white font-semibold">Payment Successful</p>
             <p className="text-xs text-[#6b88b0]">{formatCurrency(parseFloat(amount))} sent to {merchant}</p>
           </div>
+        ) : nfcTapping ? (
+          <NfcScreen onComplete={() => handlePay("nfc")} loading={loading} />
         ) : (
-          <div className="p-5 space-y-4">
-            <div>
-              <label className="block text-xs font-medium text-[#c0d4ef] mb-1.5">Merchant / Store</label>
-              <input
-                type="text"
-                placeholder="e.g. Amazon, Netflix, Uber"
-                value={merchant}
-                onChange={(e) => { setMerchant(e.target.value); setError(""); }}
-                autoFocus
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-medium text-[#c0d4ef] mb-1.5">Category</label>
-              <select
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                className="w-full bg-[#020c1b] border border-[#0d2040] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500/50"
+          <>
+            {/* Method tabs */}
+            <div className="flex border-b border-[#0d2040]">
+              <button
+                onClick={() => setMethod("chip")}
+                className={`flex-1 flex items-center justify-center gap-2 py-3 text-xs font-medium transition-colors border-b-2 ${method === "chip" ? "text-white border-blue-500" : "text-[#6b88b0] border-transparent hover:text-white/70"}`}
               >
-                {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
-              </select>
+                <CreditCard className="w-3.5 h-3.5" />
+                Chip &amp; PIN
+              </button>
+              <button
+                onClick={() => setMethod("nfc")}
+                disabled={!card.nfcEnabled}
+                title={!card.nfcEnabled ? "NFC is disabled on this card" : undefined}
+                className={`flex-1 flex items-center justify-center gap-2 py-3 text-xs font-medium transition-colors border-b-2 disabled:opacity-40 ${method === "nfc" ? "text-white border-emerald-500" : "text-[#6b88b0] border-transparent hover:text-white/70"}`}
+              >
+                <Wifi className="w-3.5 h-3.5" />
+                NFC Tap
+              </button>
             </div>
 
-            <div>
-              <label className="block text-xs font-medium text-[#c0d4ef] mb-1.5">Amount (USD)</label>
-              <input
-                type="number"
-                min={0.01}
-                step="0.01"
-                placeholder="0.00"
-                value={amount}
-                onChange={(e) => { setAmount(e.target.value); setError(""); }}
-                onKeyDown={(e) => e.key === "Enter" && handlePay()}
-              />
-            </div>
+            <div className="p-5 space-y-4">
+              {/* Chip: show card details panel */}
+              {method === "chip" && (
+                <div className="bg-[#020c1b] border border-[#0d2040] rounded-xl p-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[10px] font-medium text-[#6b88b0] uppercase tracking-wider">Card Details</span>
+                    <button onClick={() => setRevealDetails(!revealDetails)} className="text-[#6b88b0] hover:text-white transition-colors">
+                      {revealDetails ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                    </button>
+                  </div>
+                  <div className="space-y-1.5">
+                    <div className="flex justify-between text-xs">
+                      <span className="text-[#6b88b0]">Number</span>
+                      <span className="font-mono text-white tracking-widest text-[11px]">
+                        {revealDetails ? card.cardNumber.replace(/(.{4})/g, "$1 ").trim() : `•••• •••• •••• ${card.cardNumber.slice(-4)}`}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-xs">
+                      <span className="text-[#6b88b0]">Expiry</span>
+                      <span className="text-white">{String(card.expiryMonth).padStart(2, "0")}/{card.expiryYear}</span>
+                    </div>
+                    <div className="flex justify-between text-xs">
+                      <span className="text-[#6b88b0]">CVV</span>
+                      <span className="font-mono text-white">{revealDetails ? card.cvv : "•••"}</span>
+                    </div>
+                    <div className="flex justify-between text-xs">
+                      <span className="text-[#6b88b0]">Network</span>
+                      <span className="text-white font-medium">{card.brand}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
 
-            <div className="flex gap-2">
-              {[5, 10, 25, 50].map((v) => (
-                <button
-                  key={v}
-                  onClick={() => setAmount(String(Math.min(v, card.balance)))}
-                  className="flex-1 py-1 text-xs text-[#6b88b0] hover:text-white border border-[#0d2040] hover:border-blue-500/40 rounded-lg transition-colors"
+              {/* NFC: info banner */}
+              {method === "nfc" && (
+                <div className="flex items-center gap-3 bg-emerald-500/5 border border-emerald-500/20 rounded-xl p-3">
+                  <div className="w-10 h-10 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0">
+                    <Wifi className="w-5 h-5 text-emerald-400" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-white">Contactless Payment</p>
+                    <p className="text-[11px] text-[#6b88b0] mt-0.5">Tap card at any NFC-enabled terminal</p>
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <label className="block text-xs font-medium text-[#c0d4ef] mb-1.5">Merchant / Store</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Amazon, Netflix, Uber"
+                  value={merchant}
+                  onChange={(e) => { setMerchant(e.target.value); setError(""); }}
+                  autoFocus
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-[#c0d4ef] mb-1.5">Category</label>
+                <select
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                  className="w-full bg-[#020c1b] border border-[#0d2040] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500/50"
                 >
-                  ${v}
-                </button>
-              ))}
-            </div>
-
-            {/* Spend summary */}
-            <div className="bg-[#020c1b] rounded-lg px-3 py-2 space-y-1">
-              <div className="flex justify-between text-xs">
-                <span className="text-[#6b88b0]">Spend limit remaining</span>
-                <span className="text-white">{formatCurrency(card.spendLimit - card.spentAmount)}</span>
+                  {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                </select>
               </div>
-              <div className="flex justify-between text-xs">
-                <span className="text-[#6b88b0]">Card balance</span>
-                <span className="text-white">{formatCurrency(card.balance)}</span>
+
+              <div>
+                <label className="block text-xs font-medium text-[#c0d4ef] mb-1.5">Amount (USD)</label>
+                <input
+                  type="number"
+                  min={0.01}
+                  step="0.01"
+                  placeholder="0.00"
+                  value={amount}
+                  onChange={(e) => { setAmount(e.target.value); setError(""); }}
+                  onKeyDown={(e) => e.key === "Enter" && (method === "chip" ? handlePay("chip") : handleNfcTap())}
+                />
+              </div>
+
+              <div className="flex gap-2">
+                {[5, 10, 25, 50].map((v) => (
+                  <button
+                    key={v}
+                    onClick={() => setAmount(String(Math.min(v, card.balance)))}
+                    className="flex-1 py-1 text-xs text-[#6b88b0] hover:text-white border border-[#0d2040] hover:border-blue-500/40 rounded-lg transition-colors"
+                  >
+                    ${v}
+                  </button>
+                ))}
+              </div>
+
+              <div className="bg-[#020c1b] rounded-lg px-3 py-2 space-y-1">
+                <div className="flex justify-between text-xs">
+                  <span className="text-[#6b88b0]">Spend limit remaining</span>
+                  <span className="text-white">{formatCurrency(card.spendLimit - card.spentAmount)}</span>
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span className="text-[#6b88b0]">Card balance</span>
+                  <span className="text-white">{formatCurrency(card.balance)}</span>
+                </div>
+              </div>
+
+              {error && <p className="text-xs text-red-400">{error}</p>}
+
+              <div className="flex gap-3">
+                <Button variant="secondary" className="flex-1" onClick={onClose}>Cancel</Button>
+                {method === "chip" ? (
+                  <Button
+                    className="flex-1"
+                    loading={loading}
+                    onClick={() => handlePay("chip")}
+                    disabled={!merchant || !amount || parseFloat(amount) <= 0}
+                  >
+                    <ShoppingCart className="w-4 h-4" />
+                    Pay with {card.brand}
+                  </Button>
+                ) : (
+                  <Button
+                    className="flex-1 !bg-emerald-700/30 !border-emerald-500/40 hover:!bg-emerald-700/50 !text-emerald-300"
+                    loading={loading}
+                    onClick={handleNfcTap}
+                    disabled={!merchant || !amount || parseFloat(amount) <= 0}
+                  >
+                    <Wifi className="w-4 h-4" />
+                    Tap to Pay
+                  </Button>
+                )}
               </div>
             </div>
-
-            {error && <p className="text-xs text-red-400">{error}</p>}
-
-            <div className="flex gap-3">
-              <Button variant="secondary" className="flex-1" onClick={onClose}>Cancel</Button>
-              <Button
-                className="flex-1"
-                loading={loading}
-                onClick={handlePay}
-                disabled={!merchant || !amount || parseFloat(amount) <= 0}
-              >
-                <ShoppingCart className="w-4 h-4" />
-                Pay Now
-              </Button>
-            </div>
-          </div>
+          </>
         )}
       </div>
     </div>
@@ -271,6 +396,7 @@ function Card3DViewer({ card, onClose }: { card: VirtualCard; onClose: () => voi
               expiryYear={card.expiryYear}
               cvv={card.cvv}
               status={card.status}
+              brand={card.brand}
               nfcEnabled={card.nfcEnabled}
               revealed
             />
@@ -342,6 +468,7 @@ export default function CardsPage() {
     spendLimit: 500,
     color: "#6366f1",
     currency: "USD",
+    brand: "VISA",
   });
 
   const fetchCards = useCallback(async () => {
@@ -379,7 +506,7 @@ export default function CardsPage() {
     if (res.ok) {
       await fetchCards();
       setShowModal(false);
-      setNewCard({ label: "", spendLimit: 500, color: "#6366f1", currency: "USD" });
+      setNewCard({ label: "", spendLimit: 500, color: "#6366f1", currency: "USD", brand: "VISA" });
     }
     setActionLoading(null);
   };
@@ -531,6 +658,7 @@ export default function CardsPage() {
                       expiryYear={card.expiryYear}
                       cvv={card.cvv}
                       status={card.status}
+                      brand={card.brand}
                       nfcEnabled={card.nfcEnabled}
                       revealed={revealed}
                       maskNumber={maskCardNumber}
@@ -696,6 +824,35 @@ export default function CardsPage() {
               </div>
 
               <div>
+                <label className="block text-sm font-medium text-[#c0d4ef] mb-2">Card Network</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {(["VISA", "MASTERCARD"] as const).map((b) => (
+                    <button
+                      key={b}
+                      onClick={() => setNewCard({ ...newCard, brand: b })}
+                      className={`py-2.5 rounded-xl border text-xs font-medium transition-all flex items-center justify-center gap-2 ${
+                        newCard.brand === b
+                          ? "border-blue-500/50 bg-blue-500/10 text-white"
+                          : "border-[#0d2040] text-[#6b88b0] hover:border-blue-500/30"
+                      }`}
+                    >
+                      {b === "VISA" ? (
+                        <span className="italic font-light tracking-widest">VISA</span>
+                      ) : (
+                        <>
+                          <div className="flex items-center">
+                            <div className="w-3.5 h-3.5 rounded-full bg-red-500/80" />
+                            <div className="w-3.5 h-3.5 rounded-full bg-yellow-400/80 -ml-2" />
+                          </div>
+                          <span>Mastercard</span>
+                        </>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
                 <label className="block text-sm font-medium text-[#c0d4ef] mb-2">Preview</label>
                 <div
                   className="relative rounded-xl overflow-hidden shadow-xl"
@@ -712,7 +869,14 @@ export default function CardsPage() {
                           <span className="text-[7px] uppercase tracking-widest" style={{ color: selectedColorStyle.accent }}>Digital Pay</span>
                         </div>
                       </div>
-                      <span className="text-white/50 text-[10px] italic">VISA</span>
+                      {newCard.brand === "MASTERCARD" ? (
+                        <div className="flex items-center">
+                          <div className="w-3 h-3 rounded-full bg-red-500/70" />
+                          <div className="w-3 h-3 rounded-full bg-yellow-400/70 -ml-1.5" />
+                        </div>
+                      ) : (
+                        <span className="text-white/50 text-[10px] italic">VISA</span>
+                      )}
                     </div>
                     <div>
                       <div

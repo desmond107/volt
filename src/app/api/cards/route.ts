@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const { label, spendLimit, color, currency } = await req.json();
+    const { label, spendLimit, color, currency, brand } = await req.json();
 
     const now = new Date();
     const expiryYear = now.getFullYear() + 3;
@@ -43,6 +43,7 @@ export async function POST(req: NextRequest) {
         spendLimit: spendLimit || 1000,
         color: color || "#6366f1",
         currency: currency || "USD",
+        brand: brand === "MASTERCARD" ? "MASTERCARD" : "VISA",
       },
     });
 

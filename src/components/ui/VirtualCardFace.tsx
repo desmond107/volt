@@ -35,13 +35,14 @@ interface Props {
   expiryYear: number;
   cvv?: string;
   status: string;
+  brand?: string;
   nfcEnabled?: boolean;
   revealed?: boolean;
   maskNumber?: (n: string) => string;
 }
 
 export default function VirtualCardFace({
-  color, label, cardHolder, cardNumber, expiryMonth, expiryYear, cvv, status, nfcEnabled = true, revealed = false, maskNumber,
+  color, label, cardHolder, cardNumber, expiryMonth, expiryYear, cvv, status, brand = "VISA", nfcEnabled = true, revealed = false, maskNumber,
 }: Props) {
   const theme = getTheme(color);
   const frozen = status === "FROZEN";
@@ -93,7 +94,14 @@ export default function VirtualCardFace({
             {nfcEnabled && (
               <ContactlessIcon className="w-5 h-5 text-white/60" />
             )}
-            <div className="text-white/50 text-xs italic font-light tracking-widest">VISA</div>
+            {brand === "MASTERCARD" ? (
+              <div className="flex items-center">
+                <div className="w-4 h-4 rounded-full bg-red-500/80" />
+                <div className="w-4 h-4 rounded-full bg-yellow-400/80 -ml-2" />
+              </div>
+            ) : (
+              <div className="text-white/50 text-xs italic font-light tracking-widest">VISA</div>
+            )}
             <div
               className={`text-[10px] font-semibold ${
                 status === "ACTIVE" ? "" : frozen ? "text-blue-300" : "text-red-400"

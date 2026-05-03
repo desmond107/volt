@@ -8,7 +8,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   try {
     const { id } = await params;
-    const { amount, merchant, category } = await req.json();
+    const { amount, merchant, category, paymentMethod } = await req.json();
 
     if (!amount || typeof amount !== "number" || amount <= 0) {
       return NextResponse.json({ error: "Invalid amount" }, { status: 400 });
@@ -53,7 +53,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
           currency: card.currency,
           merchant: merchant || "Unknown Merchant",
           category: category || null,
-          description: `Card payment to ${merchant || "merchant"}`,
+          description: `${paymentMethod === "nfc" ? "NFC tap" : "Chip & PIN"} payment at ${merchant || "merchant"}`,
+          metadata: JSON.stringify({ paymentMethod: paymentMethod || "chip" }),
         },
       });
       return updated;
