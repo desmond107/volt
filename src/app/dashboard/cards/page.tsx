@@ -4,8 +4,9 @@ import TopBar from "@/components/dashboard/TopBar";
 import VirtualCardFace, { getTheme } from "@/components/ui/VirtualCardFace";
 import EagleLogo from "@/components/ui/EagleLogo";
 import { formatCurrency, maskCardNumber } from "@/lib/utils";
-import { Plus, CreditCard, Eye, EyeOff, Snowflake, Trash2, AlertCircle, Link2, Link2Off, X, ArrowDownLeft, Wifi, WifiOff, Maximize2, ShoppingCart, CheckCircle2 } from "lucide-react";
+import { Plus, CreditCard, Eye, EyeOff, Snowflake, Trash2, AlertCircle, Link2, Link2Off, X, ArrowDownLeft, Wifi, WifiOff, Maximize2, ShoppingCart, CheckCircle2, ChevronRight } from "lucide-react";
 import Button from "@/components/ui/Button";
+import Link from "next/link";
 
 interface LinkedWallet {
   id: string;
@@ -42,12 +43,20 @@ interface Wallet {
 }
 
 const cardColors = [
-  { label: "Navy",    value: "#6366f1", ...getTheme("#6366f1") },
-  { label: "Cyan",    value: "#06b6d4", ...getTheme("#06b6d4") },
-  { label: "Emerald", value: "#10b981", ...getTheme("#10b981") },
-  { label: "Rose",    value: "#f43f5e", ...getTheme("#f43f5e") },
-  { label: "Violet",  value: "#8b5cf6", ...getTheme("#8b5cf6") },
-  { label: "Gold",    value: "#f59e0b", ...getTheme("#f59e0b") },
+  { label: "Navy",     value: "#6366f1", ...getTheme("#6366f1") },
+  { label: "Cyan",     value: "#06b6d4", ...getTheme("#06b6d4") },
+  { label: "Emerald",  value: "#10b981", ...getTheme("#10b981") },
+  { label: "Rose",     value: "#f43f5e", ...getTheme("#f43f5e") },
+  { label: "Violet",   value: "#8b5cf6", ...getTheme("#8b5cf6") },
+  { label: "Gold",     value: "#f59e0b", ...getTheme("#f59e0b") },
+  { label: "Crimson",  value: "#ef4444", ...getTheme("#ef4444") },
+  { label: "Ocean",    value: "#1d4ed8", ...getTheme("#1d4ed8") },
+  { label: "Midnight", value: "#334155", ...getTheme("#334155") },
+  { label: "Teal",     value: "#0d9488", ...getTheme("#0d9488") },
+  { label: "Orange",   value: "#ea580c", ...getTheme("#ea580c") },
+  { label: "Fuchsia",  value: "#d946ef", ...getTheme("#d946ef") },
+  { label: "Lime",     value: "#84cc16", ...getTheme("#84cc16") },
+  { label: "Arctic",   value: "#0ea5e9", ...getTheme("#0ea5e9") },
 ];
 
 const CATEGORIES = [
@@ -774,6 +783,26 @@ export default function CardsPage() {
             })}
           </div>
         )}
+
+        {/* Physical card banner */}
+        <Link
+          href="/dashboard/cards/physical"
+          className="group mt-6 flex items-center justify-between bg-[#061120] border border-[#0d2040] hover:border-blue-500/30 rounded-xl px-5 py-4 transition-all"
+        >
+          <div className="flex items-center gap-4">
+            <div
+              className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+              style={{ background: "linear-gradient(135deg, #0a0c10 0%, #1a2230 100%)", border: "1px solid #c9943a33" }}
+            >
+              <CreditCard className="w-5 h-5" style={{ color: "#c9943a" }} />
+            </div>
+            <div>
+              <div className="text-sm font-semibold text-white">Get a Physical Volt Card</div>
+              <div className="text-xs text-[#6b88b0] mt-0.5">Premium matte debit card delivered to your door</div>
+            </div>
+          </div>
+          <ChevronRight className="w-4 h-4 text-[#4a6080] group-hover:text-blue-400 transition-colors" />
+        </Link>
       </main>
 
       {/* Issue card modal */}
@@ -806,7 +835,7 @@ export default function CardsPage() {
 
               <div>
                 <label className="block text-sm font-medium text-[#c0d4ef] mb-2">Card Theme</label>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   {cardColors.map((c) => (
                     <button
                       key={c.value}

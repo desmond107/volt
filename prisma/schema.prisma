@@ -19,11 +19,12 @@ model User {
   createdAt              DateTime  @default(now())
   updatedAt              DateTime  @updatedAt
 
-  wallets       Wallet[]
-  cards         VirtualCard[]
-  transactions  Transaction[]
-  kycDocuments  KycDocument[]
-  apiKeys       ApiKey[]
+  wallets               Wallet[]
+  cards                 VirtualCard[]
+  transactions          Transaction[]
+  kycDocuments          KycDocument[]
+  apiKeys               ApiKey[]
+  physicalCardRequests  PhysicalCardRequest[]
 }
 
 model Wallet {
@@ -118,6 +119,26 @@ model ApiKey {
   lastUsed    DateTime?
   isActive    Boolean   @default(true)
   createdAt   DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model PhysicalCardRequest {
+  id             String    @id @default(cuid())
+  userId         String
+  status         String    @default("PENDING")
+  fullName       String
+  phone          String
+  addressLine1   String
+  addressLine2   String?
+  city           String
+  state          String?
+  postalCode     String
+  country        String
+  trackingNumber String?
+  notes          String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

@@ -8,6 +8,14 @@ export const cardThemes: Record<string, { gradient: string; chip: string; accent
   "#f43f5e": { gradient: "linear-gradient(135deg, #1f0a10 0%, #9f1239 50%, #1f0a10 100%)", chip: "#fb7185", accent: "#fb7185" },
   "#8b5cf6": { gradient: "linear-gradient(135deg, #1e1030 0%, #5b21b6 50%, #1e1030 100%)", chip: "#a78bfa", accent: "#a78bfa" },
   "#f59e0b": { gradient: "linear-gradient(135deg, #1c1000 0%, #78350f 50%, #1c1000 100%)", chip: "#f0b429", accent: "#f0b429" },
+  "#ef4444": { gradient: "linear-gradient(135deg, #1a0404 0%, #7f1d1d 50%, #1a0404 100%)", chip: "#f87171", accent: "#fca5a5" },
+  "#1d4ed8": { gradient: "linear-gradient(135deg, #03092c 0%, #1e3a8a 50%, #03092c 100%)", chip: "#60a5fa", accent: "#93c5fd" },
+  "#334155": { gradient: "linear-gradient(135deg, #020617 0%, #1e293b 50%, #020617 100%)", chip: "#94a3b8", accent: "#cbd5e1" },
+  "#0d9488": { gradient: "linear-gradient(135deg, #011715 0%, #134e4a 50%, #011715 100%)", chip: "#2dd4bf", accent: "#5eead4" },
+  "#ea580c": { gradient: "linear-gradient(135deg, #1a0800 0%, #7c2d12 50%, #1a0800 100%)", chip: "#fb923c", accent: "#fdba74" },
+  "#d946ef": { gradient: "linear-gradient(135deg, #1a0320 0%, #701a75 50%, #1a0320 100%)", chip: "#e879f9", accent: "#f0abfc" },
+  "#84cc16": { gradient: "linear-gradient(135deg, #081200 0%, #3f6212 50%, #081200 100%)", chip: "#a3e635", accent: "#bef264" },
+  "#0ea5e9": { gradient: "linear-gradient(135deg, #020e1f 0%, #0c4a6e 50%, #020e1f 100%)", chip: "#38bdf8", accent: "#7dd3fc" },
 };
 
 const fallbackTheme = { gradient: "linear-gradient(135deg, #0a0a0a 0%, #1f1f1f 50%, #0a0a0a 100%)", chip: "#9ca3af", accent: "#e5e7eb" };
