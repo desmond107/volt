@@ -3,8 +3,10 @@ import { useState, useEffect } from "react";
 import TopBar from "@/components/dashboard/TopBar";
 import EagleLogo from "@/components/ui/EagleLogo";
 import Button from "@/components/ui/Button";
-import { ArrowLeft, CheckCircle2, Clock, Package, Truck, MapPin, AlertCircle, ChevronRight } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Clock, Package, Truck, MapPin, AlertCircle, ChevronRight, CreditCard, X, Trash2 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import VirtualCardFace from "@/components/ui/VirtualCardFace";
 
 interface PhysicalCardRequest {
   id: string;
@@ -91,6 +93,146 @@ const CARD_COLORS = [
     border: "#38bdf833",
   },
 ];
+
+const PHYSICAL_TO_VIRTUAL_COLOR: Record<string, string> = {
+  midnight: "#334155",
+  white:    "#334155",
+  navy:     "#1d4ed8",
+  gold:     "#f59e0b",
+  rosegold: "#f43f5e",
+  arctic:   "#0ea5e9",
+};
+
+interface VirtualCardModal {
+  label: string;
+  spendLimit: string;
+  creating: boolean;
+  error: string;
+}
+
+function CreateVirtualCardModal({
+  physicalColor,
+  holderName,
+  onClose,
+  onCreated,
+}: {
+  physicalColor: string;
+  holderName: string;
+  onClose: () => void;
+  onCreated: () => void;
+}) {
+  const colorHex = PHYSICAL_TO_VIRTUAL_COLOR[physicalColor] ?? "#334155";
+  const colorLabel = CARD_COLORS.find((c) => c.id === physicalColor)?.label ?? "Midnight Black";
+
+  const [modal, setModal] = useState<VirtualCardModal>({
+    label: `${colorLabel} Physical Card`,
+    spendLimit: "1000",
+    creating: false,
+    error: "",
+  });
+
+  async function handleCreate() {
+    if (!modal.label.trim()) {
+      setModal((m) => ({ ...m, error: "Please enter a card label." }));
+      return;
+    }
+    const limit = parseFloat(modal.spendLimit);
+    if (!limit || limit < 10) {
+      setModal((m) => ({ ...m, error: "Spend limit must be at least $10." }));
+      return;
+    }
+    setModal((m) => ({ ...m, creating: true, error: "" }));
+    try {
+      const res = await fetch("/api/cards", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ label: modal.label.trim(), spendLimit: limit, color: colorHex, brand: "VISA" }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setModal((m) => ({ ...m, creating: false, error: data.error ?? "Failed to create card." }));
+        return;
+      }
+      onCreated();
+    } catch {
+      setModal((m) => ({ ...m, creating: false, error: "Failed to create card." }));
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-[#061120] border border-[#0d2040] rounded-2xl w-full max-w-md shadow-2xl">
+        <div className="flex items-center justify-between p-5 border-b border-[#0d2040]">
+          <div>
+            <h2 className="text-base font-semibold text-white">Create Matching Virtual Card</h2>
+            <p className="text-xs text-[#6b88b0] mt-0.5">{colorLabel} theme</p>
+          </div>
+          <button onClick={onClose} className="p-1.5 text-[#6b88b0] hover:text-white rounded-lg hover:bg-[#0d2040] transition-colors">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        <div className="p-5 space-y-5">
+          {/* Card preview */}
+          <div className="max-w-[260px] mx-auto">
+            <VirtualCardFace
+              color={colorHex}
+              label={modal.label || "Virtual Card"}
+              cardHolder={holderName || "YOUR NAME"}
+              cardNumber="0000000000000000"
+              expiryMonth={new Date().getMonth() + 1}
+              expiryYear={new Date().getFullYear() + 3}
+              status="ACTIVE"
+              brand="VISA"
+              nfcEnabled
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-[#8aa0b8] mb-1.5">Card Label</label>
+            <input
+              type="text"
+              placeholder="e.g. Physical Card Twin"
+              value={modal.label}
+              onChange={(e) => setModal((m) => ({ ...m, label: e.target.value, error: "" }))}
+              autoFocus
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-[#8aa0b8] mb-1.5">Spend Limit (USD)</label>
+            <input
+              type="number"
+              min={10}
+              max={10000}
+              value={modal.spendLimit}
+              onChange={(e) => setModal((m) => ({ ...m, spendLimit: e.target.value, error: "" }))}
+            />
+          </div>
+
+          {modal.error && (
+            <div className="flex items-center gap-2 text-sm text-red-400 bg-red-500/5 border border-red-500/20 rounded-lg px-3 py-2">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              {modal.error}
+            </div>
+          )}
+
+          <div className="flex gap-3 pt-1">
+            <button
+              onClick={onClose}
+              className="flex-1 py-2.5 text-sm font-medium text-[#6b88b0] hover:text-white bg-[#020c1b] border border-[#0d2040] rounded-lg hover:border-[#1a3a5c] transition-colors"
+            >
+              Cancel
+            </button>
+            <Button loading={modal.creating} onClick={handleCreate} className="flex-1">
+              Issue Virtual Card
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 const STEPS = [
   { key: "PENDING",   label: "Request Submitted", icon: Clock,         desc: "We've received your request and are reviewing it." },
@@ -242,12 +384,16 @@ const COUNTRIES = [
 ];
 
 export default function PhysicalCardPage() {
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [request, setRequest] = useState<PhysicalCardRequest | null>(null);
   const [kycVerified, setKycVerified] = useState<boolean | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const [showVirtualModal, setShowVirtualModal] = useState(false);
+  const [cancelConfirm, setCancelConfirm] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
 
   const [form, setForm] = useState({
     fullName: "",
@@ -279,6 +425,22 @@ export default function PhysicalCardPage() {
     }
     load();
   }, []);
+
+  async function handleCancel() {
+    setCancelling(true);
+    try {
+      const res = await fetch("/api/physical-cards", { method: "DELETE" });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error ?? "Failed to cancel request.");
+        return;
+      }
+      setRequest(null);
+      setCancelConfirm(false);
+    } finally {
+      setCancelling(false);
+    }
+  }
 
   function setField(field: string, value: string) {
     setForm((f) => ({ ...f, [field]: value }));
@@ -427,6 +589,63 @@ export default function PhysicalCardPage() {
               </div>
             </div>
 
+            {/* Cancel request — only for PENDING / REVIEWING */}
+            {["PENDING", "REVIEWING"].includes(request.status) && (
+              cancelConfirm ? (
+                <div className="bg-red-500/5 border border-red-500/20 rounded-xl p-5 space-y-3">
+                  <div className="flex items-start gap-3">
+                    <Trash2 className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+                    <div>
+                      <div className="text-sm font-semibold text-red-300 mb-1">Cancel this request?</div>
+                      <p className="text-xs text-[#8aa0b8]">
+                        Your {CARD_COLORS.find((c) => c.id === request.cardColor)?.label ?? "card"} request will be permanently cancelled. You can submit a new one at any time.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => setCancelConfirm(false)}
+                      className="flex-1 py-2 text-sm font-medium text-[#6b88b0] hover:text-white bg-[#020c1b] border border-[#0d2040] rounded-lg hover:border-[#1a3a5c] transition-colors"
+                    >
+                      Keep Request
+                    </button>
+                    <button
+                      onClick={handleCancel}
+                      disabled={cancelling}
+                      className="flex-1 py-2 text-sm font-medium text-white bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 hover:border-red-500/60 rounded-lg transition-colors disabled:opacity-50"
+                    >
+                      {cancelling ? "Cancelling…" : "Yes, Cancel Request"}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setCancelConfirm(true)}
+                  className="w-full flex items-center justify-center gap-2 py-3 text-sm font-medium text-red-400 hover:text-red-200 bg-[#061120] border border-red-500/20 hover:border-red-500/50 rounded-xl transition-colors"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  Cancel Request
+                </button>
+              )
+            )}
+
+            {/* Create matching virtual card */}
+            <button
+              onClick={() => setShowVirtualModal(true)}
+              className="w-full flex items-center justify-between bg-[#061120] border border-[#0d2040] hover:border-violet-500/30 rounded-xl px-5 py-4 transition-all group"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center shrink-0">
+                  <CreditCard className="w-4 h-4 text-violet-400" />
+                </div>
+                <div className="text-left">
+                  <div className="text-sm font-semibold text-white">Create Matching Virtual Card</div>
+                  <div className="text-xs text-[#6b88b0] mt-0.5">Use the same color online before your physical card arrives</div>
+                </div>
+              </div>
+              <ChevronRight className="w-4 h-4 text-[#4a6080] group-hover:text-violet-400 transition-colors shrink-0" />
+            </button>
+
             {(request.status === "REJECTED" || request.status === "DELIVERED") && (
               <button
                 onClick={() => setRequest(null)}
@@ -454,12 +673,21 @@ export default function PhysicalCardPage() {
                 card and ship it to {request.city}, {request.country}. Expect delivery within 7–14 business days after approval.
               </p>
             </div>
-            <button
-              onClick={() => setSuccess(false)}
-              className="text-sm text-emerald-400 hover:text-emerald-200 transition-colors"
-            >
-              View request status →
-            </button>
+            <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+              <button
+                onClick={() => setShowVirtualModal(true)}
+                className="flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-medium text-violet-300 hover:text-white bg-violet-500/10 border border-violet-500/30 hover:border-violet-500/60 rounded-xl transition-colors"
+              >
+                <CreditCard className="w-4 h-4" />
+                Create Virtual Card
+              </button>
+              <button
+                onClick={() => setSuccess(false)}
+                className="text-sm text-emerald-400 hover:text-emerald-200 transition-colors px-2"
+              >
+                View request status →
+              </button>
+            </div>
           </div>
         )}
 
@@ -645,6 +873,18 @@ export default function PhysicalCardPage() {
           </div>
         )}
       </main>
+
+      {showVirtualModal && request && (
+        <CreateVirtualCardModal
+          physicalColor={request.cardColor ?? "midnight"}
+          holderName={request.fullName}
+          onClose={() => setShowVirtualModal(false)}
+          onCreated={() => {
+            setShowVirtualModal(false);
+            router.push("/dashboard/cards");
+          }}
+        />
+      )}
     </div>
   );
 }

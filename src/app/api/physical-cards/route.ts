@@ -59,3 +59,29 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Failed to submit request" }, { status: 500 });
   }
 }
+
+export async function DELETE() {
+  const session = await getSession();
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  try {
+    const request = await prisma.physicalCardRequest.findFirst({
+      where: { userId: session.id },
+      orderBy: { createdAt: "desc" },
+    });
+
+    if (!request) {
+      return NextResponse.json({ error: "No card request found" }, { status: 404 });
+    }
+
+    if (!["PENDING", "REVIEWING"].includes(request.status)) {
+      return NextResponse.json({ error: "Request cannot be cancelled at this stage" }, { status: 409 });
+    }
+
+    await prisma.physicalCardRequest.delete({ where: { id: request.id } });
+
+    return NextResponse.json({ ok: true });
+  } catch {
+    return NextResponse.json({ error: "Failed to cancel request" }, { status: 500 });
+  }
+}
