@@ -17,10 +17,80 @@ interface PhysicalCardRequest {
   state: string | null;
   postalCode: string;
   country: string;
+  cardColor: string;
   trackingNumber: string | null;
   notes: string | null;
   createdAt: string;
 }
+
+const CARD_COLORS = [
+  {
+    id: "midnight",
+    label: "Midnight Black",
+    bg: "linear-gradient(135deg, #0a0c10 0%, #151a24 40%, #0d1219 100%)",
+    chip: "#c9943a",
+    text: "rgba(255,255,255,0.6)",
+    accent: "#c9943a",
+    shimmer: "linear-gradient(90deg, transparent, #c9943a55, #c9943a, #c9943a55, transparent)",
+    swatch: "#151a24",
+    border: "#c9943a33",
+  },
+  {
+    id: "white",
+    label: "Pearl White",
+    bg: "linear-gradient(135deg, #e8eaf0 0%, #f5f6fa 50%, #dde0ea 100%)",
+    chip: "#9b8050",
+    text: "rgba(30,40,60,0.7)",
+    accent: "#8a7040",
+    shimmer: "linear-gradient(90deg, transparent, #9b805055, #9b8050, #9b805055, transparent)",
+    swatch: "#f0f1f6",
+    border: "#9b805033",
+  },
+  {
+    id: "navy",
+    label: "Deep Navy",
+    bg: "linear-gradient(135deg, #030b1f 0%, #0a1e4a 50%, #030b1f 100%)",
+    chip: "#60a5fa",
+    text: "rgba(255,255,255,0.6)",
+    accent: "#60a5fa",
+    shimmer: "linear-gradient(90deg, transparent, #60a5fa55, #60a5fa, #60a5fa55, transparent)",
+    swatch: "#0a1e4a",
+    border: "#60a5fa33",
+  },
+  {
+    id: "gold",
+    label: "Brushed Gold",
+    bg: "linear-gradient(135deg, #1c1000 0%, #3d2a00 40%, #1c1000 100%)",
+    chip: "#f0c040",
+    text: "rgba(255,220,100,0.7)",
+    accent: "#f0c040",
+    shimmer: "linear-gradient(90deg, transparent, #f0c04055, #f0c040, #f0c04055, transparent)",
+    swatch: "#3d2a00",
+    border: "#f0c04033",
+  },
+  {
+    id: "rosegold",
+    label: "Rose Gold",
+    bg: "linear-gradient(135deg, #1a0a0a 0%, #4a1a22 40%, #1a0a0a 100%)",
+    chip: "#f4a0b0",
+    text: "rgba(255,200,210,0.7)",
+    accent: "#f4a0b0",
+    shimmer: "linear-gradient(90deg, transparent, #f4a0b055, #f4a0b0, #f4a0b055, transparent)",
+    swatch: "#4a1a22",
+    border: "#f4a0b033",
+  },
+  {
+    id: "arctic",
+    label: "Arctic Blue",
+    bg: "linear-gradient(135deg, #010f1f 0%, #013a5e 50%, #010f1f 100%)",
+    chip: "#38bdf8",
+    text: "rgba(150,220,255,0.7)",
+    accent: "#38bdf8",
+    shimmer: "linear-gradient(90deg, transparent, #38bdf855, #38bdf8, #38bdf855, transparent)",
+    swatch: "#013a5e",
+    border: "#38bdf833",
+  },
+];
 
 const STEPS = [
   { key: "PENDING",   label: "Request Submitted", icon: Clock,         desc: "We've received your request and are reviewing it." },
@@ -32,69 +102,72 @@ const STEPS = [
 
 const STATUS_ORDER = ["PENDING", "REVIEWING", "APPROVED", "SHIPPED", "DELIVERED"];
 
-function PhysicalCardMockup() {
+function PhysicalCardMockup({ colorId, holderName }: { colorId: string; holderName?: string }) {
+  const theme = CARD_COLORS.find((c) => c.id === colorId) ?? CARD_COLORS[0];
+  const isLight = colorId === "white";
+
   return (
     <div
-      className="relative rounded-2xl overflow-hidden shadow-2xl w-full"
-      style={{ background: "linear-gradient(135deg, #0a0c10 0%, #151a24 40%, #0d1219 100%)", aspectRatio: "1.586 / 1" }}
+      className="relative rounded-2xl overflow-hidden shadow-2xl w-full select-none"
+      style={{ background: theme.bg, aspectRatio: "1.586 / 1" }}
     >
-      {/* Subtle noise texture */}
+      {/* Shimmer top line */}
+      <div className="absolute top-0 left-0 right-0 h-px" style={{ background: theme.shimmer }} />
+
+      {/* Subtle grid */}
       <div
-        className="absolute inset-0 opacity-[0.025]"
+        className="absolute inset-0 opacity-[0.03]"
         style={{
-          backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E\")",
-          backgroundSize: "128px 128px",
+          backgroundImage: "linear-gradient(white 1px, transparent 1px), linear-gradient(90deg, white 1px, transparent 1px)",
+          backgroundSize: "24px 24px",
         }}
-      />
-      {/* Gold shimmer line */}
-      <div
-        className="absolute top-0 left-0 right-0 h-px"
-        style={{ background: "linear-gradient(90deg, transparent, #c9943a55, #c9943a, #c9943a55, transparent)" }}
       />
 
       <div className="absolute inset-0 p-5 flex flex-col justify-between">
         {/* Top row */}
         <div className="flex justify-between items-start">
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-md bg-white/5 flex items-center justify-center border border-white/10">
+            <div
+              className="w-7 h-7 rounded-md flex items-center justify-center"
+              style={{ background: isLight ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.05)", border: isLight ? "1px solid rgba(0,0,0,0.1)" : "1px solid rgba(255,255,255,0.1)" }}
+            >
               <EagleLogo size={16} />
             </div>
             <div className="flex flex-col leading-none">
-              <span className="text-white font-semibold text-xs">Volt</span>
-              <span className="text-[8px] uppercase tracking-widest font-medium" style={{ color: "#c9943a" }}>
+              <span className="text-xs font-semibold" style={{ color: isLight ? "#1e2840" : "#fff" }}>Volt</span>
+              <span className="text-[8px] uppercase tracking-widest font-medium" style={{ color: theme.accent }}>
                 Physical Card
               </span>
             </div>
           </div>
-          <span className="text-white/30 text-xs italic font-light tracking-widest">VISA</span>
+          <span className="text-xs italic font-light tracking-widest" style={{ color: theme.text }}>VISA</span>
         </div>
 
         {/* Bottom */}
         <div>
           <div
             className="w-10 h-7 rounded-md mb-3 flex items-center justify-center"
-            style={{
-              background: "linear-gradient(135deg, #c9943acc, #c9943a55)",
-              border: "1px solid #c9943a44",
-            }}
+            style={{ background: `linear-gradient(135deg, ${theme.chip}cc, ${theme.chip}55)`, border: `1px solid ${theme.chip}44` }}
           >
-            <div className="w-6 h-4 rounded-sm flex flex-col justify-around p-0.5" style={{ background: "#c9943a33" }}>
+            <div className="w-6 h-4 rounded-sm flex flex-col justify-around p-0.5" style={{ background: `${theme.chip}33` }}>
               {[0, 1, 2].map((i) => (
-                <div key={i} className="h-px rounded" style={{ background: "#c9943a99" }} />
+                <div key={i} className="h-px rounded" style={{ background: `${theme.chip}99` }} />
               ))}
             </div>
           </div>
 
-          <p className="text-white/30 font-mono text-sm tracking-widest mb-3">•••• •••• •••• ••••</p>
+          <p className="font-mono text-sm tracking-widest mb-3" style={{ color: theme.text }}>•••• •••• •••• ••••</p>
 
           <div className="flex justify-between items-end">
             <div>
-              <div className="text-white/30 text-[10px] uppercase tracking-wider mb-0.5">Card Holder</div>
-              <div className="text-white/60 text-xs font-medium">YOUR NAME</div>
+              <div className="text-[10px] uppercase tracking-wider mb-0.5" style={{ color: `${theme.text}` }}>Card Holder</div>
+              <div className="text-xs font-medium" style={{ color: isLight ? "#1e2840" : "rgba(255,255,255,0.85)" }}>
+                {holderName || "YOUR NAME"}
+              </div>
             </div>
             <div>
-              <div className="text-white/30 text-[10px] uppercase tracking-wider mb-0.5">Expires</div>
-              <div className="text-white/60 text-xs font-medium">MM/YY</div>
+              <div className="text-[10px] uppercase tracking-wider mb-0.5" style={{ color: theme.text }}>Expires</div>
+              <div className="text-xs font-medium" style={{ color: isLight ? "#1e2840" : "rgba(255,255,255,0.85)" }}>MM/YY</div>
             </div>
           </div>
         </div>
@@ -113,11 +186,9 @@ function StatusTimeline({ status }: { status: string }) {
         const Icon = step.icon;
         const done = idx < currentIdx;
         const active = idx === currentIdx && !isRejected;
-        const pending = idx > currentIdx || isRejected;
 
         return (
           <div key={step.key} className="flex gap-4">
-            {/* Spine */}
             <div className="flex flex-col items-center">
               <div
                 className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 border transition-all ${
@@ -128,34 +199,18 @@ function StatusTimeline({ status }: { status: string }) {
                     : "bg-[#0d2040]/40 border-[#0d2040]"
                 }`}
               >
-                <Icon
-                  className={`w-3.5 h-3.5 ${
-                    done ? "text-emerald-400" : active ? "text-blue-400" : "text-[#2a4060]"
-                  }`}
-                />
+                <Icon className={`w-3.5 h-3.5 ${done ? "text-emerald-400" : active ? "text-blue-400" : "text-[#2a4060]"}`} />
               </div>
               {idx < STEPS.length - 1 && (
-                <div
-                  className={`w-px flex-1 min-h-7 my-1 ${
-                    done ? "bg-emerald-500/30" : "bg-[#0d2040]"
-                  }`}
-                />
+                <div className={`w-px flex-1 min-h-7 my-1 ${done ? "bg-emerald-500/30" : "bg-[#0d2040]"}`} />
               )}
             </div>
-
-            {/* Content */}
             <div className={`pb-5 ${idx === STEPS.length - 1 ? "pb-0" : ""}`}>
-              <div
-                className={`text-sm font-medium ${
-                  done ? "text-emerald-300" : active ? "text-white" : "text-[#2a4060]"
-                }`}
-              >
+              <div className={`text-sm font-medium ${done ? "text-emerald-300" : active ? "text-white" : "text-[#2a4060]"}`}>
                 {step.label}
               </div>
               {(done || active) && (
-                <div className={`text-xs mt-0.5 ${done ? "text-[#4a7090]" : "text-[#6b88b0]"}`}>
-                  {step.desc}
-                </div>
+                <div className={`text-xs mt-0.5 ${done ? "text-[#4a7090]" : "text-[#6b88b0]"}`}>{step.desc}</div>
               )}
             </div>
           </div>
@@ -203,6 +258,7 @@ export default function PhysicalCardPage() {
     state: "",
     postalCode: "",
     country: "",
+    cardColor: "midnight",
   });
 
   useEffect(() => {
@@ -266,10 +322,13 @@ export default function PhysicalCardPage() {
     );
   }
 
+  const previewColor = request ? (request.cardColor ?? "midnight") : form.cardColor;
+
   return (
     <div className="flex flex-col flex-1 overflow-y-auto">
       <TopBar title="Physical Card" />
       <main className="max-w-3xl mx-auto w-full px-4 py-8 space-y-8">
+
         {/* Header */}
         <div>
           <Link
@@ -283,9 +342,14 @@ export default function PhysicalCardPage() {
           <p className="text-sm text-[#6b88b0] mt-1">A premium matte debit card delivered to your door.</p>
         </div>
 
-        {/* Card mockup */}
-        <div className="max-w-sm">
-          <PhysicalCardMockup />
+        {/* Card mockup — live preview */}
+        <div className="max-w-sm space-y-3">
+          <PhysicalCardMockup colorId={previewColor} holderName={form.fullName || undefined} />
+          {request && (
+            <p className="text-xs text-center text-[#4a6080]">
+              {CARD_COLORS.find((c) => c.id === request.cardColor)?.label ?? "Midnight Black"}
+            </p>
+          )}
         </div>
 
         {/* KYC gate */}
@@ -297,10 +361,7 @@ export default function PhysicalCardPage() {
               <p className="text-xs text-[#8aa0b8] mb-3">
                 You must complete KYC verification before requesting a physical card.
               </p>
-              <Link
-                href="/dashboard/kyc"
-                className="inline-flex items-center gap-1 text-xs font-medium text-amber-400 hover:text-amber-200 transition-colors"
-              >
+              <Link href="/dashboard/kyc" className="inline-flex items-center gap-1 text-xs font-medium text-amber-400 hover:text-amber-200 transition-colors">
                 Complete Verification <ChevronRight className="w-3.5 h-3.5" />
               </Link>
             </div>
@@ -318,7 +379,6 @@ export default function PhysicalCardPage() {
               <StatusTimeline status={request.status} />
             </div>
 
-            {/* Request details */}
             <div className="bg-[#061120] border border-[#0d2040] rounded-xl p-6 space-y-4">
               <h2 className="text-sm font-semibold text-white">Delivery Details</h2>
               <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
@@ -333,16 +393,27 @@ export default function PhysicalCardPage() {
                 <div className="col-span-2">
                   <div className="text-[10px] uppercase tracking-wider text-[#4a6080] mb-0.5">Address</div>
                   <div className="text-[#c0d4ef]">
-                    {request.addressLine1}
-                    {request.addressLine2 && `, ${request.addressLine2}`}
+                    {request.addressLine1}{request.addressLine2 && `, ${request.addressLine2}`}
                   </div>
                   <div className="text-[#c0d4ef]">
                     {[request.city, request.state, request.postalCode].filter(Boolean).join(", ")}
                   </div>
                   <div className="text-[#c0d4ef]">{request.country}</div>
                 </div>
+                <div>
+                  <div className="text-[10px] uppercase tracking-wider text-[#4a6080] mb-0.5">Card Color</div>
+                  <div className="flex items-center gap-2">
+                    <div
+                      className="w-4 h-4 rounded-full border border-white/10"
+                      style={{ background: CARD_COLORS.find((c) => c.id === request.cardColor)?.swatch ?? "#151a24" }}
+                    />
+                    <span className="text-[#c0d4ef]">
+                      {CARD_COLORS.find((c) => c.id === request.cardColor)?.label ?? "Midnight Black"}
+                    </span>
+                  </div>
+                </div>
                 {request.trackingNumber && (
-                  <div className="col-span-2">
+                  <div>
                     <div className="text-[10px] uppercase tracking-wider text-[#4a6080] mb-0.5">Tracking Number</div>
                     <div className="text-blue-300 font-mono text-xs">{request.trackingNumber}</div>
                   </div>
@@ -367,7 +438,7 @@ export default function PhysicalCardPage() {
           </div>
         )}
 
-        {/* Success state after submitting */}
+        {/* Success */}
         {success && request && (
           <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-xl p-8 flex flex-col items-center text-center gap-4">
             <div className="w-12 h-12 rounded-full bg-emerald-500/10 flex items-center justify-center">
@@ -376,8 +447,11 @@ export default function PhysicalCardPage() {
             <div>
               <div className="text-base font-semibold text-white mb-1">Request Submitted!</div>
               <p className="text-sm text-[#6b88b0]">
-                We'll review your details and ship your Volt card to {request.city}, {request.country}.
-                Expect delivery within 7–14 business days after approval.
+                We'll produce your{" "}
+                <span className="text-white font-medium">
+                  {CARD_COLORS.find((c) => c.id === request.cardColor)?.label ?? "Midnight Black"}
+                </span>{" "}
+                card and ship it to {request.city}, {request.country}. Expect delivery within 7–14 business days after approval.
               </p>
             </div>
             <button
@@ -393,11 +467,46 @@ export default function PhysicalCardPage() {
         {kycVerified && !request && !success && (
           <div className="bg-[#061120] border border-[#0d2040] rounded-xl p-6">
             <h2 className="text-base font-semibold text-white mb-1">Request Your Card</h2>
-            <p className="text-xs text-[#6b88b0] mb-6">Enter your delivery address. We'll ship your card within 3–5 business days of approval.</p>
+            <p className="text-xs text-[#6b88b0] mb-6">Choose a color and enter your delivery address.</p>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="sm:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <form onSubmit={handleSubmit} className="space-y-5">
+              {/* Color picker */}
+              <div>
+                <label className="block text-xs font-medium text-[#8aa0b8] mb-3">Card Color</label>
+                <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
+                  {CARD_COLORS.map((c) => (
+                    <button
+                      key={c.id}
+                      type="button"
+                      onClick={() => setField("cardColor", c.id)}
+                      className="flex flex-col items-center gap-1.5 group"
+                    >
+                      <div
+                        className="w-full aspect-square rounded-xl transition-all"
+                        style={{
+                          background: c.bg,
+                          border: form.cardColor === c.id
+                            ? `2px solid ${c.accent}`
+                            : `1px solid ${c.border}`,
+                          boxShadow: form.cardColor === c.id
+                            ? `0 0 0 3px ${c.accent}22, 0 4px 16px ${c.accent}22`
+                            : "none",
+                          transform: form.cardColor === c.id ? "scale(1.05)" : "scale(1)",
+                        }}
+                      />
+                      <span
+                        className="text-[10px] text-center leading-tight transition-colors"
+                        style={{ color: form.cardColor === c.id ? "#c0d4ef" : "#4a6080" }}
+                      >
+                        {c.label}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="border-t border-[#0d2040] pt-5 space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-medium text-[#8aa0b8] mb-1.5">
                       Full Name <span className="text-red-400">*</span>
@@ -422,86 +531,86 @@ export default function PhysicalCardPage() {
                       required
                     />
                   </div>
-                </div>
 
-                <div className="sm:col-span-2">
-                  <label className="block text-xs font-medium text-[#8aa0b8] mb-1.5">
-                    Address Line 1 <span className="text-red-400">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Street address, P.O. box"
-                    value={form.addressLine1}
-                    onChange={(e) => setField("addressLine1", e.target.value)}
-                    required
-                  />
-                </div>
+                  <div className="sm:col-span-2">
+                    <label className="block text-xs font-medium text-[#8aa0b8] mb-1.5">
+                      Address Line 1 <span className="text-red-400">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Street address, P.O. box"
+                      value={form.addressLine1}
+                      onChange={(e) => setField("addressLine1", e.target.value)}
+                      required
+                    />
+                  </div>
 
-                <div className="sm:col-span-2">
-                  <label className="block text-xs font-medium text-[#8aa0b8] mb-1.5">
-                    Address Line 2 <span className="text-[#4a6080] text-[10px] ml-1">Optional</span>
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Apartment, suite, unit, building, floor, etc."
-                    value={form.addressLine2}
-                    onChange={(e) => setField("addressLine2", e.target.value)}
-                  />
-                </div>
+                  <div className="sm:col-span-2">
+                    <label className="block text-xs font-medium text-[#8aa0b8] mb-1.5">
+                      Address Line 2 <span className="text-[#4a6080] text-[10px] ml-1">Optional</span>
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Apartment, suite, unit, floor, etc."
+                      value={form.addressLine2}
+                      onChange={(e) => setField("addressLine2", e.target.value)}
+                    />
+                  </div>
 
-                <div>
-                  <label className="block text-xs font-medium text-[#8aa0b8] mb-1.5">
-                    City <span className="text-red-400">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="City"
-                    value={form.city}
-                    onChange={(e) => setField("city", e.target.value)}
-                    required
-                  />
-                </div>
+                  <div>
+                    <label className="block text-xs font-medium text-[#8aa0b8] mb-1.5">
+                      City <span className="text-red-400">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="City"
+                      value={form.city}
+                      onChange={(e) => setField("city", e.target.value)}
+                      required
+                    />
+                  </div>
 
-                <div>
-                  <label className="block text-xs font-medium text-[#8aa0b8] mb-1.5">
-                    State / Province <span className="text-[#4a6080] text-[10px] ml-1">Optional</span>
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="State or province"
-                    value={form.state}
-                    onChange={(e) => setField("state", e.target.value)}
-                  />
-                </div>
+                  <div>
+                    <label className="block text-xs font-medium text-[#8aa0b8] mb-1.5">
+                      State / Province <span className="text-[#4a6080] text-[10px] ml-1">Optional</span>
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="State or province"
+                      value={form.state}
+                      onChange={(e) => setField("state", e.target.value)}
+                    />
+                  </div>
 
-                <div>
-                  <label className="block text-xs font-medium text-[#8aa0b8] mb-1.5">
-                    Postal / ZIP Code <span className="text-red-400">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="00000"
-                    value={form.postalCode}
-                    onChange={(e) => setField("postalCode", e.target.value)}
-                    required
-                  />
-                </div>
+                  <div>
+                    <label className="block text-xs font-medium text-[#8aa0b8] mb-1.5">
+                      Postal / ZIP Code <span className="text-red-400">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="00000"
+                      value={form.postalCode}
+                      onChange={(e) => setField("postalCode", e.target.value)}
+                      required
+                    />
+                  </div>
 
-                <div>
-                  <label className="block text-xs font-medium text-[#8aa0b8] mb-1.5">
-                    Country <span className="text-red-400">*</span>
-                  </label>
-                  <select
-                    value={form.country}
-                    onChange={(e) => setField("country", e.target.value)}
-                    required
-                    className="w-full"
-                  >
-                    <option value="" disabled>Select country</option>
-                    {COUNTRIES.map((c) => (
-                      <option key={c} value={c}>{c}</option>
-                    ))}
-                  </select>
+                  <div>
+                    <label className="block text-xs font-medium text-[#8aa0b8] mb-1.5">
+                      Country <span className="text-red-400">*</span>
+                    </label>
+                    <select
+                      value={form.country}
+                      onChange={(e) => setField("country", e.target.value)}
+                      required
+                      className="w-full"
+                    >
+                      <option value="" disabled>Select country</option>
+                      {COUNTRIES.map((c) => (
+                        <option key={c} value={c}>{c}</option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
               </div>
 
@@ -512,16 +621,14 @@ export default function PhysicalCardPage() {
                 </div>
               )}
 
-              <div className="pt-2">
-                <Button type="submit" loading={submitting} className="w-full">
-                  Submit Request
-                </Button>
-              </div>
+              <Button type="submit" loading={submitting} className="w-full">
+                Submit Request
+              </Button>
             </form>
           </div>
         )}
 
-        {/* Features */}
+        {/* Feature highlights */}
         {!request && !success && (
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {[

@@ -30,11 +30,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "You already have an active card request" }, { status: 409 });
     }
 
-    const { fullName, phone, addressLine1, addressLine2, city, state, postalCode, country } = await req.json();
+    const { fullName, phone, addressLine1, addressLine2, city, state, postalCode, country, cardColor } = await req.json();
 
     if (!fullName?.trim() || !phone?.trim() || !addressLine1?.trim() || !city?.trim() || !postalCode?.trim() || !country?.trim()) {
       return NextResponse.json({ error: "Please fill in all required fields" }, { status: 400 });
     }
+
+    const validColors = ["midnight", "white", "navy", "gold", "rosegold", "arctic"];
+    const resolvedColor = validColors.includes(cardColor) ? cardColor : "midnight";
 
     const request = await prisma.physicalCardRequest.create({
       data: {
@@ -47,6 +50,7 @@ export async function POST(req: NextRequest) {
         state: state?.trim() || null,
         postalCode: postalCode.trim(),
         country: country.trim(),
+        cardColor: resolvedColor,
       },
     });
 

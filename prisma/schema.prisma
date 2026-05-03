@@ -135,6 +135,7 @@ model PhysicalCardRequest {
   state          String?
   postalCode     String
   country        String
+  cardColor      String    @default("midnight")
   trackingNumber String?
   notes          String?
   createdAt      DateTime  @default(now())
