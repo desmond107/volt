@@ -736,18 +736,18 @@ export default function CardsPage() {
                     </div>
                   )}
 
-                  {/* Actions */}
-                  <div className="flex gap-2">
+                  {/* Actions — row 1: primary labelled actions */}
+                  <div className="grid grid-cols-4 gap-2">
                     <button
                       onClick={() => setRevealedCard(revealed ? null : card.id)}
-                      className="flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium text-blue-300 hover:text-white bg-[#061120] border border-blue-500/20 rounded-lg hover:border-blue-500/50 transition-colors"
+                      className="flex flex-col items-center justify-center gap-1 py-2.5 text-xs font-medium text-blue-300 hover:text-white bg-[#061120] border border-blue-500/20 rounded-lg hover:border-blue-500/50 transition-colors"
                     >
                       {revealed ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       {revealed ? "Hide" : "Reveal"}
                     </button>
                     <button
                       onClick={() => setLinkModal(card)}
-                      className="flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium text-violet-300 hover:text-violet-100 bg-[#061120] border border-violet-500/20 rounded-lg hover:border-violet-500/50 transition-colors"
+                      className="flex flex-col items-center justify-center gap-1 py-2.5 text-xs font-medium text-violet-300 hover:text-violet-100 bg-[#061120] border border-violet-500/20 rounded-lg hover:border-violet-500/50 transition-colors"
                     >
                       <Link2 className="w-4 h-4" />
                       {card.wallet ? "Relink" : "Link"}
@@ -756,7 +756,7 @@ export default function CardsPage() {
                       onClick={() => { setFundModal(card); setFundAmount(""); setFundError(""); }}
                       disabled={!card.wallet}
                       title={!card.wallet ? "Link a wallet first" : "Fund this card"}
-                      className="flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium text-amber-300 hover:text-amber-100 bg-[#061120] border border-amber-500/20 rounded-lg hover:border-amber-500/50 transition-colors disabled:cursor-not-allowed disabled:text-amber-300/60"
+                      className="flex flex-col items-center justify-center gap-1 py-2.5 text-xs font-medium text-amber-300 hover:text-amber-100 bg-[#061120] border border-amber-500/20 rounded-lg hover:border-amber-500/50 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       <ArrowDownLeft className="w-4 h-4" />
                       Fund
@@ -765,16 +765,20 @@ export default function CardsPage() {
                       onClick={() => setPayModal(card)}
                       disabled={card.status !== "ACTIVE" || card.balance <= 0}
                       title={card.status !== "ACTIVE" ? "Card must be active to pay" : card.balance <= 0 ? "Fund the card first" : "Make a payment"}
-                      className="flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium text-emerald-300 hover:text-emerald-100 bg-[#061120] border border-emerald-500/20 rounded-lg hover:border-emerald-500/50 transition-colors disabled:cursor-not-allowed disabled:text-emerald-300/60"
+                      className="flex flex-col items-center justify-center gap-1 py-2.5 text-xs font-medium text-emerald-300 hover:text-emerald-100 bg-[#061120] border border-emerald-500/20 rounded-lg hover:border-emerald-500/50 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       <ShoppingCart className="w-4 h-4" />
                       Pay
                     </button>
+                  </div>
+
+                  {/* Actions — row 2: secondary icon actions */}
+                  <div className="grid grid-cols-4 gap-2">
                     <button
                       onClick={() => handleToggleNfc(card.id, card.nfcEnabled)}
                       disabled={actionLoading === card.id + "-nfc"}
                       title={card.nfcEnabled ? "Disable NFC" : "Enable NFC"}
-                      className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium bg-[#061120] border rounded-lg transition-colors disabled:opacity-50 ${
+                      className={`flex flex-col items-center justify-center gap-1 py-2.5 text-xs font-medium bg-[#061120] border rounded-lg transition-colors disabled:opacity-50 ${
                         card.nfcEnabled
                           ? "text-emerald-300 border-emerald-500/20 hover:text-red-300 hover:border-red-500/50"
                           : "text-slate-300 border-slate-500/20 hover:text-emerald-300 hover:border-emerald-500/50"
@@ -786,7 +790,7 @@ export default function CardsPage() {
                     <button
                       onClick={() => handleFreeze(card.id, card.status)}
                       disabled={actionLoading === card.id}
-                      className="flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium text-sky-300 hover:text-sky-100 bg-[#061120] border border-sky-500/20 rounded-lg hover:border-sky-500/50 transition-colors disabled:opacity-50"
+                      className="flex flex-col items-center justify-center gap-1 py-2.5 text-xs font-medium text-sky-300 hover:text-sky-100 bg-[#061120] border border-sky-500/20 rounded-lg hover:border-sky-500/50 transition-colors disabled:opacity-50"
                     >
                       <Snowflake className="w-4 h-4" />
                       {frozen ? "Unfreeze" : "Freeze"}
@@ -794,16 +798,18 @@ export default function CardsPage() {
                     <button
                       onClick={() => { setLimitModal(card); setNewLimit(String(card.spendLimit)); setLimitError(""); }}
                       title="Edit spend limit"
-                      className="flex items-center justify-center p-3 text-slate-300 hover:text-white bg-[#061120] border border-slate-500/20 rounded-lg hover:border-slate-500/50 transition-colors"
+                      className="flex flex-col items-center justify-center gap-1 py-2.5 text-xs font-medium text-slate-300 hover:text-white bg-[#061120] border border-slate-500/20 rounded-lg hover:border-slate-500/50 transition-colors"
                     >
                       <SlidersHorizontal className="w-4 h-4" />
+                      Limit
                     </button>
                     <button
                       onClick={() => setDeleteConfirm(card)}
                       disabled={actionLoading === card.id}
-                      className="flex items-center justify-center p-3 text-red-400 hover:text-red-200 bg-[#061120] border border-red-500/20 rounded-lg hover:border-red-500/50 transition-colors disabled:opacity-50"
+                      className="flex flex-col items-center justify-center gap-1 py-2.5 text-xs font-medium text-red-400 hover:text-red-200 bg-[#061120] border border-red-500/20 rounded-lg hover:border-red-500/50 transition-colors disabled:opacity-50"
                     >
                       <Trash2 className="w-4 h-4" />
+                      Delete
                     </button>
                   </div>
                 </div>
