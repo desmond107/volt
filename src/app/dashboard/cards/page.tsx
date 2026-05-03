@@ -4,7 +4,7 @@ import TopBar from "@/components/dashboard/TopBar";
 import VirtualCardFace, { getTheme } from "@/components/ui/VirtualCardFace";
 import EagleLogo from "@/components/ui/EagleLogo";
 import { formatCurrency, maskCardNumber } from "@/lib/utils";
-import { Plus, CreditCard, Eye, EyeOff, Snowflake, Trash2, AlertCircle, Link2, Link2Off, X, ArrowDownLeft, Wifi, WifiOff, Maximize2, ShoppingCart, CheckCircle2, ChevronRight } from "lucide-react";
+import { Plus, CreditCard, Eye, EyeOff, Snowflake, Trash2, AlertCircle, Link2, Link2Off, X, ArrowDownLeft, Wifi, WifiOff, Maximize2, ShoppingCart, CheckCircle2, ChevronRight, SlidersHorizontal } from "lucide-react";
 import Button from "@/components/ui/Button";
 import Link from "next/link";
 
@@ -471,6 +471,10 @@ export default function CardsPage() {
   const [card3dView, setCard3dView] = useState<VirtualCard | null>(null);
   const [payModal, setPayModal] = useState<VirtualCard | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<VirtualCard | null>(null);
+  const [limitModal, setLimitModal] = useState<VirtualCard | null>(null);
+  const [newLimit, setNewLimit] = useState("");
+  const [limitLoading, setLimitLoading] = useState(false);
+  const [limitError, setLimitError] = useState("");
 
   const [newCard, setNewCard] = useState({
     label: "",
@@ -568,6 +572,23 @@ export default function CardsPage() {
     });
     await fetchCards();
     setActionLoading(null);
+  };
+
+  const handleUpdateLimit = async () => {
+    if (!limitModal) return;
+    const val = parseFloat(newLimit);
+    if (isNaN(val) || val < 0) { setLimitError("Enter a valid limit"); return; }
+    setLimitError("");
+    setLimitLoading(true);
+    await fetch(`/api/cards/${limitModal.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ spendLimit: val }),
+    });
+    await fetchCards();
+    setLimitModal(null);
+    setNewLimit("");
+    setLimitLoading(false);
   };
 
   const handleFund = async () => {
@@ -769,6 +790,13 @@ export default function CardsPage() {
                     >
                       <Snowflake className="w-4 h-4" />
                       {frozen ? "Unfreeze" : "Freeze"}
+                    </button>
+                    <button
+                      onClick={() => { setLimitModal(card); setNewLimit(String(card.spendLimit)); setLimitError(""); }}
+                      title="Edit spend limit"
+                      className="flex items-center justify-center p-3 text-slate-300 hover:text-white bg-[#061120] border border-slate-500/20 rounded-lg hover:border-slate-500/50 transition-colors"
+                    >
+                      <SlidersHorizontal className="w-4 h-4" />
                     </button>
                     <button
                       onClick={() => setDeleteConfirm(card)}
@@ -1100,6 +1128,61 @@ export default function CardsPage() {
                 >
                   <ArrowDownLeft className="w-4 h-4" />
                   Fund Card
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit spend limit modal */}
+      {limitModal && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-[#061120] border border-[#0d2040] rounded-2xl w-full max-w-sm">
+            <div className="flex items-center justify-between p-5 border-b border-[#0d2040]">
+              <div>
+                <h2 className="text-base font-semibold text-white">Edit Spend Limit</h2>
+                <p className="text-xs text-[#6b88b0] mt-0.5">{limitModal.label}</p>
+              </div>
+              <button onClick={() => setLimitModal(null)} className="p-1.5 text-[#6b88b0] hover:text-white rounded-lg hover:bg-[#0d2040] transition-colors">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="p-5 space-y-4">
+              <div className="flex items-center justify-between text-xs text-[#6b88b0] bg-[#020c1b] border border-[#0d2040] rounded-lg px-3 py-2">
+                <span>Currently spent</span>
+                <span className="text-white font-medium">{formatCurrency(limitModal.spentAmount)} / {formatCurrency(limitModal.spendLimit)}</span>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-[#c0d4ef] mb-1.5">New Spend Limit (USD)</label>
+                <input
+                  type="number"
+                  min={0}
+                  step="10"
+                  placeholder="e.g. 1000"
+                  value={newLimit}
+                  onChange={(e) => { setNewLimit(e.target.value); setLimitError(""); }}
+                  onKeyDown={(e) => e.key === "Enter" && handleUpdateLimit()}
+                  autoFocus
+                />
+              </div>
+              <div className="flex gap-2">
+                {[100, 250, 500, 1000, 2500].map((v) => (
+                  <button
+                    key={v}
+                    onClick={() => setNewLimit(String(v))}
+                    className="flex-1 py-1 text-xs text-[#6b88b0] hover:text-white border border-[#0d2040] hover:border-blue-500/40 rounded-lg transition-colors"
+                  >
+                    ${v}
+                  </button>
+                ))}
+              </div>
+              {limitError && <p className="text-xs text-red-400">{limitError}</p>}
+              <div className="flex gap-3 pt-1">
+                <Button variant="secondary" className="flex-1" onClick={() => setLimitModal(null)}>Cancel</Button>
+                <Button className="flex-1" loading={limitLoading} onClick={handleUpdateLimit} disabled={!newLimit}>
+                  <SlidersHorizontal className="w-4 h-4" />
+                  Update Limit
                 </Button>
               </div>
             </div>

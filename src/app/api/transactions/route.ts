@@ -10,13 +10,21 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const page = Math.max(1, parseInt(searchParams.get("page") || "1") || 1);
-    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "20") || 20));
+    const limit = Math.min(1000, Math.max(1, parseInt(searchParams.get("limit") || "20") || 20));
     const type = searchParams.get("type");
+    const dateFrom = searchParams.get("dateFrom");
+    const dateTo = searchParams.get("dateTo");
     const skip = (page - 1) * limit;
 
     const where = {
       userId: session.id,
       ...(type && type !== "ALL" ? { type } : {}),
+      ...(dateFrom || dateTo ? {
+        createdAt: {
+          ...(dateFrom ? { gte: new Date(dateFrom) } : {}),
+          ...(dateTo ? { lte: new Date(dateTo + "T23:59:59.999Z") } : {}),
+        },
+      } : {}),
     };
 
     const [transactions, total] = await Promise.all([
