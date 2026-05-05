@@ -2,7 +2,7 @@ import Link from "next/link";
 import Button from "@/components/ui/Button";
 import { ArrowRight } from "lucide-react";
 
-export default function CTA() {
+export default function CTA({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
   return (
     <section className="py-24">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
@@ -18,12 +18,21 @@ export default function CTA() {
               and everyday spending.
             </p>
             <div className="flex flex-col sm:flex-row justify-center gap-4">
-              <Link href="/auth/signup">
-                <Button size="lg">
-                  Get Started for Free
-                  <ArrowRight className="w-4 h-4" />
-                </Button>
-              </Link>
+              {isLoggedIn ? (
+                <Link href="/dashboard">
+                  <Button size="lg">
+                    View your Volt
+                    <ArrowRight className="w-4 h-4" />
+                  </Button>
+                </Link>
+              ) : (
+                <Link href="/auth/signup">
+                  <Button size="lg">
+                    Get Started for Free
+                    <ArrowRight className="w-4 h-4" />
+                  </Button>
+                </Link>
+              )}
               <Link href="/pricing">
                 <Button variant="secondary" size="lg">
                   View Pricing

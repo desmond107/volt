@@ -15,6 +15,7 @@ import {
   CalendarClock,
   Menu,
   X,
+  Globe,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
@@ -24,6 +25,7 @@ const nav = [
   { href: "/dashboard", icon: LayoutDashboard, label: "Overview" },
   { href: "/dashboard/cards", icon: CreditCard, label: "Virtual Cards" },
   { href: "/dashboard/wallet", icon: Wallet, label: "Wallets" },
+  { href: "/dashboard/multi-wallet", icon: Globe, label: "Multi-Currency" },
   { href: "/dashboard/transactions", icon: ArrowLeftRight, label: "Transactions" },
   { href: "/dashboard/analytics", icon: BarChart3, label: "Analytics" },
   { href: "/dashboard/scheduled", icon: CalendarClock, label: "Scheduled" },

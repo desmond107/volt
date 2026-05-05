@@ -66,7 +66,7 @@ export default function WalletPage() {
     setLoading(false);
   }, []);
 
-  useEffect(() => { fetchWallets(); }, [fetchWallets]);
+useEffect(() => { fetchWallets(); }, [fetchWallets]);
 
   const handleCopy = async (text: string, key: string) => {
     await navigator.clipboard.writeText(text);

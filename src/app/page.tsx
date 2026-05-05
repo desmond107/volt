@@ -6,18 +6,22 @@ import HowItWorks from "@/components/landing/HowItWorks";
 import Testimonials from "@/components/landing/Testimonials";
 import CTA from "@/components/landing/CTA";
 import Footer from "@/components/landing/Footer";
+import { getSession } from "@/lib/session";
 
-export default function Home() {
+export default async function Home() {
+  const session = await getSession();
+  const isLoggedIn = !!session;
+
   return (
     <>
-      <Navbar />
+      <Navbar isLoggedIn={isLoggedIn} />
       <main>
-        <Hero />
+        <Hero isLoggedIn={isLoggedIn} />
         <SupportedAssets />
         <Features />
         <HowItWorks />
         <Testimonials />
-        <CTA />
+        <CTA isLoggedIn={isLoggedIn} />
       </main>
       <Footer />
     </>

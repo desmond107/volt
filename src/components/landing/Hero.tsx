@@ -120,7 +120,7 @@ function CardFace({ card, active, direction }: { card: typeof cards[0]; active: 
   );
 }
 
-export default function Hero() {
+export default function Hero({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
   const router = useRouter();
   const [current, setCurrent] = useState(0);
   const [direction, setDirection] = useState<"left" | "right">("right");
@@ -206,22 +206,33 @@ export default function Hero() {
             </p>
 
             <div className="flex flex-col sm:flex-row items-start gap-4 mb-12">
-              <Link href="/auth/signup">
-                <Button size="lg" className="gap-2">
-                  Create Free Account
-                  <ArrowRight className="w-4 h-4" />
-                </Button>
-              </Link>
-              <button
-                onClick={handleDemo}
-                disabled={demoLoading}
-                className="flex items-center gap-2 px-5 py-3 rounded-xl border border-[#c9943a]/40 text-[#c9943a] text-sm font-semibold hover:bg-[#c9943a]/10 hover:border-[#c9943a]/60 transition-colors disabled:opacity-60"
-              >
-                {demoLoading ? (
-                  <span className="w-4 h-4 border-2 border-[#c9943a]/30 border-t-[#c9943a] rounded-full animate-spin" />
-                ) : "⚡"}
-                {demoLoading ? "Loading…" : "Live Demo"}
-              </button>
+              {isLoggedIn ? (
+                <Link href="/dashboard">
+                  <Button size="lg" className="gap-2">
+                    View your Volt
+                    <ArrowRight className="w-4 h-4" />
+                  </Button>
+                </Link>
+              ) : (
+                <>
+                  <Link href="/auth/signup">
+                    <Button size="lg" className="gap-2">
+                      Create Free Account
+                      <ArrowRight className="w-4 h-4" />
+                    </Button>
+                  </Link>
+                  <button
+                    onClick={handleDemo}
+                    disabled={demoLoading}
+                    className="flex items-center gap-2 px-5 py-3 rounded-xl border border-[#c9943a]/40 text-[#c9943a] text-sm font-semibold hover:bg-[#c9943a]/10 hover:border-[#c9943a]/60 transition-colors disabled:opacity-60"
+                  >
+                    {demoLoading ? (
+                      <span className="w-4 h-4 border-2 border-[#c9943a]/30 border-t-[#c9943a] rounded-full animate-spin" />
+                    ) : "⚡"}
+                    {demoLoading ? "Loading…" : "Live Demo"}
+                  </button>
+                </>
+              )}
             </div>
 
             <div className="flex flex-wrap gap-6 text-sm text-[#6b88b0]">
