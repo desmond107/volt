@@ -14,7 +14,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       return NextResponse.json({ error: "Invalid amount" }, { status: 400 });
     }
 
-    const card = await prisma.virtualCard.findUnique({ where: { id } });
+    const card = await prisma.virtualCard.findUnique({
+      where: { id },
+      include: { fiatWallet: true },
+    });
     if (!card || card.userId !== session.id) {
       return NextResponse.json({ error: "Card not found" }, { status: 404 });
     }
@@ -24,15 +27,55 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     if (card.status !== "ACTIVE") {
       return NextResponse.json({ error: "Card is not active" }, { status: 400 });
     }
-    const cardBalance = card.balance.toNumber();
+
     const spentAmount = card.spentAmount.toNumber();
     const spendLimit = card.spendLimit.toNumber();
-    if (cardBalance < amount) {
-      return NextResponse.json({ error: `Insufficient card balance (available: $${cardBalance.toFixed(2)})` }, { status: 400 });
-    }
     if (spentAmount + amount > spendLimit) {
       const remaining = spendLimit - spentAmount;
       return NextResponse.json({ error: `Exceeds spend limit (remaining: $${remaining.toFixed(2)})` }, { status: 400 });
+    }
+
+    // Multi-currency card: pay directly from linked fiat wallet
+    if (card.fiatWalletId && card.fiatWallet) {
+      const walletBalance = card.fiatWallet.balance.toNumber();
+      if (walletBalance < amount) {
+        return NextResponse.json({ error: `Insufficient wallet balance (available: ${walletBalance.toFixed(2)} ${card.currency})` }, { status: 400 });
+      }
+
+      const updatedCard = await prisma.$transaction(async (tx) => {
+        await tx.fiatWallet.update({
+          where: { id: card.fiatWalletId! },
+          data: { balance: { decrement: amount } },
+        });
+        const updated = await tx.virtualCard.update({
+          where: { id },
+          data: { spentAmount: { increment: amount } },
+        });
+        await tx.fiatTransaction.create({
+          data: {
+            userId: session.id,
+            walletId: card.fiatWalletId!,
+            type: "CARD_PAYMENT",
+            amount,
+            currency: card.currency,
+            description: `${paymentMethod === "nfc" ? "NFC tap" : "Chip & PIN"} payment at ${merchant || "merchant"} via ${card.label ?? "card"}`,
+            metadata: JSON.stringify({ paymentMethod: paymentMethod || "chip", cardId: id, merchant }),
+          },
+        });
+        return updated;
+      });
+
+      return NextResponse.json({
+        ok: true,
+        balance: walletBalance - amount,
+        spentAmount: updatedCard.spentAmount.toNumber(),
+      });
+    }
+
+    // Digital currency card: pay from card balance
+    const cardBalance = card.balance.toNumber();
+    if (cardBalance < amount) {
+      return NextResponse.json({ error: `Insufficient card balance (available: $${cardBalance.toFixed(2)})` }, { status: 400 });
     }
 
     const updatedCard = await prisma.$transaction(async (tx) => {

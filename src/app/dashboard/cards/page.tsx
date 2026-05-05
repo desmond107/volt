@@ -4,7 +4,7 @@ import TopBar from "@/components/dashboard/TopBar";
 import VirtualCardFace, { getTheme } from "@/components/ui/VirtualCardFace";
 import EagleLogo from "@/components/ui/EagleLogo";
 import { formatCurrency, maskCardNumber } from "@/lib/utils";
-import { Plus, CreditCard, Eye, EyeOff, Snowflake, Trash2, AlertCircle, Link2, Link2Off, X, ArrowDownLeft, Wifi, WifiOff, Maximize2, ShoppingCart, CheckCircle2, ChevronRight, SlidersHorizontal } from "lucide-react";
+import { Plus, CreditCard, Eye, EyeOff, Snowflake, Trash2, AlertCircle, Link2, Link2Off, X, ArrowDownLeft, Wifi, WifiOff, Maximize2, ShoppingCart, CheckCircle2, ChevronRight, SlidersHorizontal, Globe } from "lucide-react";
 import Button from "@/components/ui/Button";
 import Link from "next/link";
 
@@ -119,6 +119,8 @@ function PayModal({ card, onClose, onSuccess }: {
   const [nfcTapping, setNfcTapping] = useState(false);
   const [revealDetails, setRevealDetails] = useState(false);
   const theme = getTheme(card.color);
+  const effectiveBalance = card.fiatWallet ? card.fiatWallet.balance : card.balance;
+  const effectiveCurrency = card.fiatWallet ? card.fiatWallet.currency : "USD";
 
   const handlePay = async (paymentMethod: string) => {
     const amt = parseFloat(amount);
@@ -153,7 +155,6 @@ function PayModal({ card, onClose, onSuccess }: {
   return (
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div className="bg-[#061120] border border-[#0d2040] rounded-2xl w-full max-w-sm overflow-hidden">
-        {/* Card header */}
         <div className="p-5 relative overflow-hidden" style={{ background: theme.gradient }}>
           <div className="absolute inset-0 opacity-[0.04]"
             style={{ backgroundImage: "linear-gradient(white 1px,transparent 1px),linear-gradient(90deg,white 1px,transparent 1px)", backgroundSize: "20px 20px" }} />
@@ -164,8 +165,14 @@ function PayModal({ card, onClose, onSuccess }: {
               <p className="font-mono text-white/70 text-xs mt-0.5">•••• •••• •••• {card.cardNumber.slice(-4)}</p>
             </div>
             <div className="text-right">
-              <p className="text-white/60 text-[10px] uppercase tracking-wider mb-0.5">Balance</p>
-              <p className="text-sm font-bold" style={{ color: theme.accent }}>{formatCurrency(card.balance)}</p>
+              <p className="text-white/60 text-[10px] uppercase tracking-wider mb-0.5">
+                {card.fiatWallet ? "Wallet Balance" : "Balance"}
+              </p>
+              <p className="text-sm font-bold" style={{ color: theme.accent }}>
+                {card.fiatWallet
+                  ? `${effectiveBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${effectiveCurrency}`
+                  : formatCurrency(effectiveBalance)}
+              </p>
             </div>
           </div>
           {!success && !nfcTapping && (
@@ -185,7 +192,6 @@ function PayModal({ card, onClose, onSuccess }: {
           <NfcScreen onComplete={() => handlePay("nfc")} loading={loading} />
         ) : (
           <>
-            {/* Method tabs */}
             <div className="flex border-b border-[#0d2040]">
               <button
                 onClick={() => setMethod("chip")}
@@ -206,7 +212,6 @@ function PayModal({ card, onClose, onSuccess }: {
             </div>
 
             <div className="p-5 space-y-4">
-              {/* Chip: show card details panel */}
               {method === "chip" && (
                 <div className="bg-[#020c1b] border border-[#0d2040] rounded-xl p-3">
                   <div className="flex items-center justify-between mb-2">
@@ -238,7 +243,6 @@ function PayModal({ card, onClose, onSuccess }: {
                 </div>
               )}
 
-              {/* NFC: info banner */}
               {method === "nfc" && (
                 <div className="flex items-center gap-3 bg-emerald-500/5 border border-emerald-500/20 rounded-xl p-3">
                   <div className="w-10 h-10 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0">
@@ -274,7 +278,7 @@ function PayModal({ card, onClose, onSuccess }: {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-[#c0d4ef] mb-1.5">Amount (USD)</label>
+                <label className="block text-xs font-medium text-[#c0d4ef] mb-1.5">Amount ({effectiveCurrency})</label>
                 <input
                   type="number"
                   min={0.01}
@@ -287,15 +291,28 @@ function PayModal({ card, onClose, onSuccess }: {
               </div>
 
               <div className="flex gap-2">
-                {[5, 10, 25, 50].map((v) => (
-                  <button
-                    key={v}
-                    onClick={() => setAmount(String(Math.min(v, card.balance)))}
-                    className="flex-1 py-1 text-xs text-[#6b88b0] hover:text-white border border-[#0d2040] hover:border-blue-500/40 rounded-lg transition-colors"
-                  >
-                    ${v}
-                  </button>
-                ))}
+                {card.fiatWallet
+                  ? [0.25, 0.5, 0.75, 1].map((pct) => {
+                      const val = Math.floor(effectiveBalance * pct * 100) / 100;
+                      return (
+                        <button
+                          key={pct}
+                          onClick={() => setAmount(String(val))}
+                          className="flex-1 py-1 text-xs text-[#6b88b0] hover:text-white border border-[#0d2040] hover:border-blue-500/40 rounded-lg transition-colors"
+                        >
+                          {pct === 1 ? "Max" : `${pct * 100}%`}
+                        </button>
+                      );
+                    })
+                  : [5, 10, 25, 50].map((v) => (
+                      <button
+                        key={v}
+                        onClick={() => setAmount(String(Math.min(v, effectiveBalance)))}
+                        className="flex-1 py-1 text-xs text-[#6b88b0] hover:text-white border border-[#0d2040] hover:border-blue-500/40 rounded-lg transition-colors"
+                      >
+                        ${v}
+                      </button>
+                    ))}
               </div>
 
               <div className="bg-[#020c1b] rounded-lg px-3 py-2 space-y-1">
@@ -304,8 +321,12 @@ function PayModal({ card, onClose, onSuccess }: {
                   <span className="text-white">{formatCurrency(card.spendLimit - card.spentAmount)}</span>
                 </div>
                 <div className="flex justify-between text-xs">
-                  <span className="text-[#6b88b0]">Card balance</span>
-                  <span className="text-white">{formatCurrency(card.balance)}</span>
+                  <span className="text-[#6b88b0]">{card.fiatWallet ? "Wallet balance" : "Card balance"}</span>
+                  <span className="text-white">
+                    {card.fiatWallet
+                      ? `${effectiveBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${effectiveCurrency}`
+                      : formatCurrency(effectiveBalance)}
+                  </span>
                 </div>
               </div>
 
@@ -418,14 +439,12 @@ function Card3DViewer({ card, onClose }: { card: VirtualCard; onClose: () => voi
               nfcEnabled={card.nfcEnabled}
               revealed
             />
-            {/* Glare overlay */}
             <div
               className="absolute inset-0 rounded-2xl pointer-events-none"
               style={{
                 background: `radial-gradient(circle at ${shine.x}% ${shine.y}%, rgba(255,255,255,0.18) 0%, transparent 65%)`,
               }}
             />
-            {/* Edge highlight */}
             <div
               className="absolute inset-0 rounded-2xl pointer-events-none"
               style={{ boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.1)" }}
@@ -623,23 +642,199 @@ export default function CardsPage() {
   };
 
   const selectedColorStyle = getTheme(newCard.color);
+  const fiatCards = cards.filter((c) => c.fiatWalletId !== null);
+  const cryptoCards = cards.filter((c) => c.fiatWalletId === null);
+
+  const renderCard = (card: VirtualCard) => {
+    const revealed = revealedCard === card.id;
+    const frozen = card.status === "FROZEN";
+    const usedPercent = card.spendLimit > 0 ? (card.spentAmount / card.spendLimit) * 100 : 0;
+    const style = getTheme(card.color);
+    const hasLinkedWallet = !!(card.wallet || card.fiatWallet);
+
+    return (
+      <div key={card.id} className="space-y-3">
+        <div className="flex items-center justify-between px-1">
+          <span className="text-sm font-medium text-white">{card.label}</span>
+          <span className="text-xs text-[#6b88b0]">{formatCurrency(card.spendLimit)} limit</span>
+        </div>
+
+        <div
+          className="relative group cursor-pointer"
+          onClick={() => setCard3dView(card)}
+          title="Click to view in 3D"
+        >
+          <VirtualCardFace
+            color={card.color}
+            label={card.label}
+            cardHolder={card.cardHolder}
+            cardNumber={card.cardNumber}
+            expiryMonth={card.expiryMonth}
+            expiryYear={card.expiryYear}
+            cvv={card.cvv}
+            status={card.status}
+            brand={card.brand}
+            nfcEnabled={card.nfcEnabled}
+            revealed={revealed}
+            maskNumber={maskCardNumber}
+          />
+          <div className="absolute inset-0 rounded-2xl bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center pointer-events-none">
+            <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-black/60 rounded-lg px-3 py-1.5 flex items-center gap-1.5">
+              <Maximize2 className="w-3.5 h-3.5 text-white" />
+              <span className="text-xs text-white font-medium">View in 3D</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Card balance */}
+        <div className="bg-[#061120] border border-[#0d2040] rounded-xl p-3">
+          <div className="flex justify-between text-xs mb-1">
+            <span className="text-[#6b88b0]">{card.fiatWallet ? "Wallet Balance" : "Card Balance"}</span>
+            {card.fiatWallet ? (
+              <span className="text-white font-semibold" style={{ color: style.accent }}>
+                {card.fiatWallet.balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {card.fiatWallet.currency}
+              </span>
+            ) : (
+              <span className="text-white font-semibold" style={{ color: style.accent }}>{formatCurrency(card.balance)}</span>
+            )}
+          </div>
+          <div className="flex justify-between text-xs mb-2">
+            <span className="text-[#6b88b0]">Spent</span>
+            <span className="text-white">{formatCurrency(card.spentAmount)} / {formatCurrency(card.spendLimit)}</span>
+          </div>
+          <div className="h-1.5 bg-[#0d2040] rounded-full overflow-hidden">
+            <div
+              className="h-full rounded-full transition-all"
+              style={{ width: `${Math.min(usedPercent, 100)}%`, backgroundColor: style.accent }}
+            />
+          </div>
+        </div>
+
+        {/* Linked wallet badge */}
+        {card.fiatWallet ? (
+          <div className="flex items-center justify-between bg-blue-500/5 border border-blue-500/20 rounded-lg px-3 py-2">
+            <div className="flex items-center gap-1.5">
+              <Globe className="w-3 h-3 text-blue-400" />
+              <span className="text-xs text-blue-300 font-medium">{card.fiatWallet.currency}</span>
+              <span className="text-xs text-[#6b88b0]">· {card.fiatWallet.name ?? "Multi-Currency Wallet"}</span>
+            </div>
+            <span className="text-xs text-[#6b88b0]">
+              {card.fiatWallet.balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {card.fiatWallet.currency}
+            </span>
+          </div>
+        ) : card.wallet ? (
+          <div className="flex items-center justify-between bg-emerald-500/5 border border-emerald-500/20 rounded-lg px-3 py-2">
+            <div className="flex items-center gap-1.5">
+              <Link2 className="w-3 h-3 text-emerald-400" />
+              <span className="text-xs text-emerald-300 font-medium">{card.wallet.asset}</span>
+              <span className="text-xs text-[#6b88b0]">· {card.wallet.network}</span>
+            </div>
+            <span className="text-xs text-[#6b88b0]">{formatCurrency(card.wallet.balance)} available</span>
+          </div>
+        ) : (
+          <div className="flex items-center gap-1.5 bg-[#020c1b] border border-dashed border-[#0d2040] rounded-lg px-3 py-2">
+            <Link2Off className="w-3 h-3 text-[#6b88b0]" />
+            <span className="text-xs text-[#6b88b0]">No wallet linked — link one to fund this card</span>
+          </div>
+        )}
+
+        {/* Actions — row 1 */}
+        <div className={`grid gap-2 ${card.fiatWalletId ? "grid-cols-3" : "grid-cols-4"}`}>
+          <button
+            onClick={() => setRevealedCard(revealed ? null : card.id)}
+            className="flex flex-col items-center justify-center gap-1 py-2.5 text-xs font-medium text-blue-300 hover:text-white bg-[#061120] border border-blue-500/20 rounded-lg hover:border-blue-500/50 transition-colors"
+          >
+            {revealed ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            {revealed ? "Hide" : "Reveal"}
+          </button>
+          <button
+            onClick={() => !card.fiatWalletId && setLinkModal(card)}
+            disabled={!!card.fiatWalletId}
+            title={card.fiatWalletId ? "Managed from Multi-Currency Wallets" : card.wallet ? "Relink wallet" : "Link a wallet"}
+            className="flex flex-col items-center justify-center gap-1 py-2.5 text-xs font-medium text-violet-300 hover:text-violet-100 bg-[#061120] border border-violet-500/20 rounded-lg hover:border-violet-500/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Link2 className="w-4 h-4" />
+            {card.fiatWalletId ? "Linked" : card.wallet ? "Relink" : "Link"}
+          </button>
+          {!card.fiatWalletId && (
+            <button
+              onClick={() => { setFundModal(card); setFundAmount(""); setFundError(""); }}
+              disabled={!hasLinkedWallet}
+              title={!hasLinkedWallet ? "Link a wallet first" : "Fund this card"}
+              className="flex flex-col items-center justify-center gap-1 py-2.5 text-xs font-medium text-amber-300 hover:text-amber-100 bg-[#061120] border border-amber-500/20 rounded-lg hover:border-amber-500/50 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <ArrowDownLeft className="w-4 h-4" />
+              Fund
+            </button>
+          )}
+          <button
+            onClick={() => setPayModal(card)}
+            disabled={card.status !== "ACTIVE" || (card.fiatWallet ? card.fiatWallet.balance <= 0 : card.balance <= 0)}
+            title={card.status !== "ACTIVE" ? "Card must be active to pay" : "Make a payment"}
+            className="flex flex-col items-center justify-center gap-1 py-2.5 text-xs font-medium text-emerald-300 hover:text-emerald-100 bg-[#061120] border border-emerald-500/20 rounded-lg hover:border-emerald-500/50 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <ShoppingCart className="w-4 h-4" />
+            Pay
+          </button>
+        </div>
+
+        {/* Actions — row 2 */}
+        <div className="grid grid-cols-4 gap-2">
+          <button
+            onClick={() => handleToggleNfc(card.id, card.nfcEnabled)}
+            disabled={actionLoading === card.id + "-nfc"}
+            title={card.nfcEnabled ? "Disable NFC" : "Enable NFC"}
+            className={`flex flex-col items-center justify-center gap-1 py-2.5 text-xs font-medium bg-[#061120] border rounded-lg transition-colors disabled:opacity-50 ${
+              card.nfcEnabled
+                ? "text-emerald-300 border-emerald-500/20 hover:text-red-300 hover:border-red-500/50"
+                : "text-slate-300 border-slate-500/20 hover:text-emerald-300 hover:border-emerald-500/50"
+            }`}
+          >
+            {card.nfcEnabled ? <Wifi className="w-4 h-4" /> : <WifiOff className="w-4 h-4" />}
+            NFC
+          </button>
+          <button
+            onClick={() => handleFreeze(card.id, card.status)}
+            disabled={actionLoading === card.id}
+            className="flex flex-col items-center justify-center gap-1 py-2.5 text-xs font-medium text-sky-300 hover:text-sky-100 bg-[#061120] border border-sky-500/20 rounded-lg hover:border-sky-500/50 transition-colors disabled:opacity-50"
+          >
+            <Snowflake className="w-4 h-4" />
+            {frozen ? "Unfreeze" : "Freeze"}
+          </button>
+          <button
+            onClick={() => { setLimitModal(card); setNewLimit(String(card.spendLimit)); setLimitError(""); }}
+            title="Edit spend limit"
+            className="flex flex-col items-center justify-center gap-1 py-2.5 text-xs font-medium text-slate-300 hover:text-white bg-[#061120] border border-slate-500/20 rounded-lg hover:border-slate-500/50 transition-colors"
+          >
+            <SlidersHorizontal className="w-4 h-4" />
+            Limit
+          </button>
+          <button
+            onClick={() => setDeleteConfirm(card)}
+            disabled={actionLoading === card.id}
+            className="flex flex-col items-center justify-center gap-1 py-2.5 text-xs font-medium text-red-400 hover:text-red-200 bg-[#061120] border border-red-500/20 rounded-lg hover:border-red-500/50 transition-colors disabled:opacity-50"
+          >
+            <Trash2 className="w-4 h-4" />
+            Delete
+          </button>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="flex flex-col flex-1 overflow-y-auto">
-      <TopBar title="Virtual Cards" subtitle="Manage your Visa virtual cards" />
+      <TopBar title="Virtual Cards" subtitle="Digital currency and multi-currency virtual cards" />
 
       <main className="flex-1 p-6">
-        <div className="flex items-center justify-between mb-6">
-          <p className="text-sm text-[#6b88b0]">{cards.length} active card(s)</p>
-          <Button
-            onClick={() => setShowModal(true)}
-            disabled={!kycVerified}
-            title={!kycVerified ? "Complete KYC to issue cards" : undefined}
-          >
-            <Plus className="w-4 h-4" />
-            Issue New Card
-          </Button>
-        </div>
+        {!loading && (
+          <p className="text-sm text-[#6b88b0] mb-6">
+            {cards.length} card{cards.length !== 1 ? "s" : ""} total
+            {cards.length > 0 && (
+              <> · <span className="text-blue-400">{fiatCards.length} multi-currency</span> · <span className="text-violet-400">{cryptoCards.length} digital</span></>
+            )}
+          </p>
+        )}
 
         {!kycVerified && (
           <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-4 mb-6 flex items-center gap-3">
@@ -656,190 +851,104 @@ export default function CardsPage() {
               <div key={i} className="rounded-2xl bg-[#061120] border border-[#0d2040] animate-pulse" style={{ aspectRatio: "1.586/1" }} />
             ))}
           </div>
-        ) : cards.length === 0 ? (
-          <div className="text-center py-20">
-            <CreditCard className="w-14 h-14 text-[#0d2040] mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-white mb-2">No cards yet</h3>
-            <p className="text-sm text-[#6b88b0] mb-6">Issue your first virtual Visa card and start spending digital currency anywhere.</p>
-            {kycVerified && (
-              <Button onClick={() => setShowModal(true)}>
-                <Plus className="w-4 h-4" />
-                Issue First Card
-              </Button>
-            )}
-          </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            {cards.map((card) => {
-              const revealed = revealedCard === card.id;
-              const frozen = card.status === "FROZEN";
-              const usedPercent = card.spendLimit > 0 ? (card.spentAmount / card.spendLimit) * 100 : 0;
-              const style = getTheme(card.color);
+          <div className="space-y-10">
 
-              return (
-                <div key={card.id} className="space-y-3">
-                  <div className="flex items-center justify-between px-1">
-                    <span className="text-sm font-medium text-white">{card.label}</span>
-                    <span className="text-xs text-[#6b88b0]">{formatCurrency(card.spendLimit)} limit</span>
+            {/* ── Multi-Currency Wallet Cards ─────────────────────────────── */}
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-6 h-6 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
+                    <Globe className="w-3.5 h-3.5 text-blue-400" />
                   </div>
-
-                  <div
-                    className="relative group cursor-pointer"
-                    onClick={() => setCard3dView(card)}
-                    title="Click to view in 3D"
-                  >
-                    <VirtualCardFace
-                      color={card.color}
-                      label={card.label}
-                      cardHolder={card.cardHolder}
-                      cardNumber={card.cardNumber}
-                      expiryMonth={card.expiryMonth}
-                      expiryYear={card.expiryYear}
-                      cvv={card.cvv}
-                      status={card.status}
-                      brand={card.brand}
-                      nfcEnabled={card.nfcEnabled}
-                      revealed={revealed}
-                      maskNumber={maskCardNumber}
-                    />
-                    <div className="absolute inset-0 rounded-2xl bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center pointer-events-none">
-                      <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-black/60 rounded-lg px-3 py-1.5 flex items-center gap-1.5">
-                        <Maximize2 className="w-3.5 h-3.5 text-white" />
-                        <span className="text-xs text-white font-medium">View in 3D</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Card balance */}
-                  <div className="bg-[#061120] border border-[#0d2040] rounded-xl p-3">
-                    <div className="flex justify-between text-xs mb-1">
-                      <span className="text-[#6b88b0]">Card Balance</span>
-                      <span className="text-white font-semibold" style={{ color: style.accent }}>{formatCurrency(card.balance)}</span>
-                    </div>
-                    <div className="flex justify-between text-xs mb-2">
-                      <span className="text-[#6b88b0]">Spent</span>
-                      <span className="text-white">{formatCurrency(card.spentAmount)} / {formatCurrency(card.spendLimit)}</span>
-                    </div>
-                    <div className="h-1.5 bg-[#0d2040] rounded-full overflow-hidden">
-                      <div
-                        className="h-full rounded-full transition-all"
-                        style={{ width: `${Math.min(usedPercent, 100)}%`, backgroundColor: style.accent }}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Linked wallet badge */}
-                  {card.fiatWallet ? (
-                    <div className="flex items-center justify-between bg-blue-500/5 border border-blue-500/20 rounded-lg px-3 py-2">
-                      <div className="flex items-center gap-1.5">
-                        <Link2 className="w-3 h-3 text-blue-400" />
-                        <span className="text-xs text-blue-300 font-medium">{card.fiatWallet.currency}</span>
-                        <span className="text-xs text-[#6b88b0]">· {card.fiatWallet.name ?? "Multi-Currency Wallet"}</span>
-                      </div>
-                      <span className="text-xs text-[#6b88b0]">{card.fiatWallet.balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {card.fiatWallet.currency}</span>
-                    </div>
-                  ) : card.wallet ? (
-                    <div className="flex items-center justify-between bg-emerald-500/5 border border-emerald-500/20 rounded-lg px-3 py-2">
-                      <div className="flex items-center gap-1.5">
-                        <Link2 className="w-3 h-3 text-emerald-400" />
-                        <span className="text-xs text-emerald-300 font-medium">{card.wallet.asset}</span>
-                        <span className="text-xs text-[#6b88b0]">· {card.wallet.network}</span>
-                      </div>
-                      <span className="text-xs text-[#6b88b0]">{formatCurrency(card.wallet.balance)} available</span>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-1.5 bg-[#020c1b] border border-dashed border-[#0d2040] rounded-lg px-3 py-2">
-                      <Link2Off className="w-3 h-3 text-[#6b88b0]" />
-                      <span className="text-xs text-[#6b88b0]">No wallet linked — link one to fund this card</span>
-                    </div>
-                  )}
-
-                  {/* Actions — row 1: primary labelled actions */}
-                  <div className="grid grid-cols-4 gap-2">
-                    <button
-                      onClick={() => setRevealedCard(revealed ? null : card.id)}
-                      className="flex flex-col items-center justify-center gap-1 py-2.5 text-xs font-medium text-blue-300 hover:text-white bg-[#061120] border border-blue-500/20 rounded-lg hover:border-blue-500/50 transition-colors"
-                    >
-                      {revealed ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                      {revealed ? "Hide" : "Reveal"}
-                    </button>
-                    <button
-                      onClick={() => setLinkModal(card)}
-                      className="flex flex-col items-center justify-center gap-1 py-2.5 text-xs font-medium text-violet-300 hover:text-violet-100 bg-[#061120] border border-violet-500/20 rounded-lg hover:border-violet-500/50 transition-colors"
-                    >
-                      <Link2 className="w-4 h-4" />
-                      {card.wallet ? "Relink" : "Link"}
-                    </button>
-                    <button
-                      onClick={() => { setFundModal(card); setFundAmount(""); setFundError(""); }}
-                      disabled={!card.wallet}
-                      title={!card.wallet ? "Link a wallet first" : "Fund this card"}
-                      className="flex flex-col items-center justify-center gap-1 py-2.5 text-xs font-medium text-amber-300 hover:text-amber-100 bg-[#061120] border border-amber-500/20 rounded-lg hover:border-amber-500/50 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      <ArrowDownLeft className="w-4 h-4" />
-                      Fund
-                    </button>
-                    <button
-                      onClick={() => setPayModal(card)}
-                      disabled={card.status !== "ACTIVE" || card.balance <= 0}
-                      title={card.status !== "ACTIVE" ? "Card must be active to pay" : card.balance <= 0 ? "Fund the card first" : "Make a payment"}
-                      className="flex flex-col items-center justify-center gap-1 py-2.5 text-xs font-medium text-emerald-300 hover:text-emerald-100 bg-[#061120] border border-emerald-500/20 rounded-lg hover:border-emerald-500/50 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      <ShoppingCart className="w-4 h-4" />
-                      Pay
-                    </button>
-                  </div>
-
-                  {/* Actions — row 2: secondary icon actions */}
-                  <div className="grid grid-cols-4 gap-2">
-                    <button
-                      onClick={() => handleToggleNfc(card.id, card.nfcEnabled)}
-                      disabled={actionLoading === card.id + "-nfc"}
-                      title={card.nfcEnabled ? "Disable NFC" : "Enable NFC"}
-                      className={`flex flex-col items-center justify-center gap-1 py-2.5 text-xs font-medium bg-[#061120] border rounded-lg transition-colors disabled:opacity-50 ${
-                        card.nfcEnabled
-                          ? "text-emerald-300 border-emerald-500/20 hover:text-red-300 hover:border-red-500/50"
-                          : "text-slate-300 border-slate-500/20 hover:text-emerald-300 hover:border-emerald-500/50"
-                      }`}
-                    >
-                      {card.nfcEnabled ? <Wifi className="w-4 h-4" /> : <WifiOff className="w-4 h-4" />}
-                      NFC
-                    </button>
-                    <button
-                      onClick={() => handleFreeze(card.id, card.status)}
-                      disabled={actionLoading === card.id}
-                      className="flex flex-col items-center justify-center gap-1 py-2.5 text-xs font-medium text-sky-300 hover:text-sky-100 bg-[#061120] border border-sky-500/20 rounded-lg hover:border-sky-500/50 transition-colors disabled:opacity-50"
-                    >
-                      <Snowflake className="w-4 h-4" />
-                      {frozen ? "Unfreeze" : "Freeze"}
-                    </button>
-                    <button
-                      onClick={() => { setLimitModal(card); setNewLimit(String(card.spendLimit)); setLimitError(""); }}
-                      title="Edit spend limit"
-                      className="flex flex-col items-center justify-center gap-1 py-2.5 text-xs font-medium text-slate-300 hover:text-white bg-[#061120] border border-slate-500/20 rounded-lg hover:border-slate-500/50 transition-colors"
-                    >
-                      <SlidersHorizontal className="w-4 h-4" />
-                      Limit
-                    </button>
-                    <button
-                      onClick={() => setDeleteConfirm(card)}
-                      disabled={actionLoading === card.id}
-                      className="flex flex-col items-center justify-center gap-1 py-2.5 text-xs font-medium text-red-400 hover:text-red-200 bg-[#061120] border border-red-500/20 rounded-lg hover:border-red-500/50 transition-colors disabled:opacity-50"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                      Delete
-                    </button>
-                  </div>
+                  <h2 className="text-sm font-semibold text-white">Multi-Currency Cards</h2>
+                  <span className="bg-blue-500/10 text-blue-400 text-xs px-2 py-0.5 rounded-full border border-blue-500/20 font-medium">
+                    {fiatCards.length}
+                  </span>
                 </div>
-              );
-            })}
+                <Link
+                  href="/dashboard/multi-wallet"
+                  className="text-xs text-[#6b88b0] hover:text-blue-300 flex items-center gap-1 transition-colors"
+                >
+                  Manage wallets
+                  <ChevronRight className="w-3 h-3" />
+                </Link>
+              </div>
+
+              {fiatCards.length === 0 ? (
+                <div className="bg-[#061120] border border-dashed border-[#0d2040] rounded-xl p-10 flex flex-col items-center gap-3 text-center">
+                  <div className="w-10 h-10 rounded-full bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
+                    <Globe className="w-5 h-5 text-blue-400/60" />
+                  </div>
+                  <p className="text-sm text-[#6b88b0]">No multi-currency cards yet.</p>
+                  <p className="text-xs text-[#4a6080] max-w-xs">
+                    Open any wallet on the Multi-Currency Wallets page and tap <strong className="text-[#6b88b0]">Create Virtual Card</strong>.
+                  </p>
+                  <Link href="/dashboard/multi-wallet">
+                    <button className="mt-1 text-xs text-blue-400 hover:text-blue-300 border border-blue-500/20 hover:border-blue-500/40 px-4 py-2 rounded-lg transition-colors">
+                      Go to Multi-Currency Wallets
+                    </button>
+                  </Link>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                  {fiatCards.map(renderCard)}
+                </div>
+              )}
+            </div>
+
+            <div className="border-t border-[#0d2040]" />
+
+            {/* ── Digital Currency Cards ──────────────────────────────────── */}
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-6 h-6 rounded-lg bg-violet-500/10 border border-violet-500/20 flex items-center justify-center">
+                    <CreditCard className="w-3.5 h-3.5 text-violet-400" />
+                  </div>
+                  <h2 className="text-sm font-semibold text-white">Digital Currency Cards</h2>
+                  <span className="bg-violet-500/10 text-violet-400 text-xs px-2 py-0.5 rounded-full border border-violet-500/20 font-medium">
+                    {cryptoCards.length}
+                  </span>
+                </div>
+                <Button
+                  onClick={() => setShowModal(true)}
+                  disabled={!kycVerified}
+                  title={!kycVerified ? "Complete KYC to issue cards" : undefined}
+                >
+                  <Plus className="w-4 h-4" />
+                  Issue New Card
+                </Button>
+              </div>
+
+              {cryptoCards.length === 0 ? (
+                <div className="bg-[#061120] border border-dashed border-[#0d2040] rounded-xl p-10 flex flex-col items-center gap-3 text-center">
+                  <div className="w-10 h-10 rounded-full bg-violet-500/10 border border-violet-500/20 flex items-center justify-center">
+                    <CreditCard className="w-5 h-5 text-violet-400/60" />
+                  </div>
+                  <p className="text-sm text-[#6b88b0]">No digital currency cards yet.</p>
+                  <p className="text-xs text-[#4a6080]">Issue a card to start spending from your crypto wallets.</p>
+                  {kycVerified && (
+                    <Button onClick={() => setShowModal(true)} className="mt-1">
+                      <Plus className="w-4 h-4" />
+                      Issue First Card
+                    </Button>
+                  )}
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                  {cryptoCards.map(renderCard)}
+                </div>
+              )}
+            </div>
+
           </div>
         )}
 
         {/* Physical card banner */}
         <Link
           href="/dashboard/cards/physical"
-          className="group mt-6 flex items-center justify-between bg-[#061120] border border-[#0d2040] hover:border-blue-500/30 rounded-xl px-5 py-4 transition-all"
+          className="group mt-10 flex items-center justify-between bg-[#061120] border border-[#0d2040] hover:border-blue-500/30 rounded-xl px-5 py-4 transition-all"
         >
           <div className="flex items-center gap-4">
             <div
@@ -861,7 +970,7 @@ export default function CardsPage() {
       {showModal && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-[#061120] border border-[#0d2040] rounded-2xl p-6 w-full max-w-md">
-            <h2 className="text-lg font-semibold text-white mb-5">Issue New Virtual Card</h2>
+            <h2 className="text-lg font-semibold text-white mb-5">Issue New Digital Currency Card</h2>
 
             <div className="space-y-4">
               <div>
@@ -935,53 +1044,17 @@ export default function CardsPage() {
 
               <div>
                 <label className="block text-sm font-medium text-[#c0d4ef] mb-2">Preview</label>
-                <div
-                  className="relative rounded-xl overflow-hidden shadow-xl"
-                  style={{ background: selectedColorStyle.gradient, aspectRatio: "1.586/1" }}
-                >
-                  <div className="absolute inset-0 p-4 flex flex-col justify-between">
-                    <div className="flex justify-between items-start">
-                      <div className="flex items-center gap-1.5">
-                        <div className="w-6 h-6 rounded bg-white/10 border border-white/20 flex items-center justify-center">
-                          <EagleLogo size={13} />
-                        </div>
-                        <div className="flex flex-col leading-none">
-                          <span className="text-white font-semibold text-[10px]">Volt</span>
-                          <span className="text-[7px] uppercase tracking-widest" style={{ color: selectedColorStyle.accent }}>Digital Pay</span>
-                        </div>
-                      </div>
-                      {newCard.brand === "MASTERCARD" ? (
-                        <div className="flex items-center">
-                          <div className="w-3 h-3 rounded-full bg-red-500/70" />
-                          <div className="w-3 h-3 rounded-full bg-yellow-400/70 -ml-1.5" />
-                        </div>
-                      ) : (
-                        <span className="text-white/50 text-[10px] italic">VISA</span>
-                      )}
-                    </div>
-                    <div>
-                      <div
-                        className="w-8 h-6 rounded mb-2 flex items-center justify-center"
-                        style={{ background: `linear-gradient(135deg, ${selectedColorStyle.chip}cc, ${selectedColorStyle.chip}55)`, border: `1px solid ${selectedColorStyle.chip}44` }}
-                      >
-                        <div className="w-5 h-3.5 rounded-sm flex flex-col justify-around p-0.5" style={{ background: `${selectedColorStyle.chip}33` }}>
-                          {[0, 1, 2].map((i) => <div key={i} className="h-px rounded" style={{ background: `${selectedColorStyle.chip}99` }} />)}
-                        </div>
-                      </div>
-                      <p className="text-white font-mono text-xs tracking-widest mb-2">•••• •••• •••• ????</p>
-                      <div className="flex justify-between items-end">
-                        <div>
-                          <div className="text-white/40 text-[8px] uppercase tracking-wider">Card Holder</div>
-                          <div className="text-white text-[10px]">{newCard.label || "Virtual Card"}</div>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-white/40 text-[8px] uppercase tracking-wider">Expires</div>
-                          <div className="text-white text-[10px]">MM/YY</div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                <VirtualCardFace
+                  color={newCard.color}
+                  label={newCard.label || "Digital Card"}
+                  cardHolder="CARD HOLDER"
+                  cardNumber="0000000000000000"
+                  expiryMonth={new Date().getMonth() + 1}
+                  expiryYear={new Date().getFullYear() + 3}
+                  status="ACTIVE"
+                  brand={newCard.brand}
+                  nfcEnabled
+                />
               </div>
             </div>
 
@@ -1090,7 +1163,29 @@ export default function CardsPage() {
             </div>
 
             <div className="p-5 space-y-4">
-              {fundModal.wallet && (
+              {/* Fiat wallet source */}
+              {fundModal.fiatWallet && (
+                <div className="flex items-center justify-between bg-blue-500/5 border border-blue-500/20 rounded-lg px-3 py-2.5">
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-full bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-300 text-xs font-bold">
+                      {fundModal.fiatWallet.currency.slice(0, 2)}
+                    </div>
+                    <div>
+                      <div className="text-xs font-medium text-white">{fundModal.fiatWallet.currency}</div>
+                      <div className="text-[10px] text-[#6b88b0]">{fundModal.fiatWallet.name ?? "Multi-Currency Wallet"}</div>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-xs text-[#6b88b0]">Available</div>
+                    <div className="text-sm font-semibold text-white">
+                      {fundModal.fiatWallet.balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {fundModal.fiatWallet.currency}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Crypto wallet source */}
+              {!fundModal.fiatWallet && fundModal.wallet && (
                 <div className="flex items-center justify-between bg-[#0d2040]/60 rounded-lg px-3 py-2.5">
                   <div className="flex items-center gap-2">
                     <div className="w-7 h-7 rounded-full bg-[#0d2040] flex items-center justify-center text-white text-xs font-bold">
@@ -1109,10 +1204,12 @@ export default function CardsPage() {
               )}
 
               <div>
-                <label className="block text-sm font-medium text-[#c0d4ef] mb-1.5">Amount (USD)</label>
+                <label className="block text-sm font-medium text-[#c0d4ef] mb-1.5">
+                  Amount ({fundModal.fiatWallet ? fundModal.currency : "USD"})
+                </label>
                 <input
                   type="number"
-                  min={1}
+                  min={0.01}
                   step="0.01"
                   placeholder="0.00"
                   value={fundAmount}
@@ -1122,7 +1219,23 @@ export default function CardsPage() {
                 />
               </div>
 
-              {fundModal.wallet && (
+              {/* Quick amounts */}
+              {fundModal.fiatWallet ? (
+                <div className="flex gap-2">
+                  {[0.25, 0.5, 0.75, 1].map((pct) => {
+                    const val = Math.floor(fundModal.fiatWallet!.balance * pct * 100) / 100;
+                    return (
+                      <button
+                        key={pct}
+                        onClick={() => setFundAmount(String(val))}
+                        className="flex-1 py-1 text-xs text-[#6b88b0] hover:text-white border border-[#0d2040] hover:border-blue-500/40 rounded-lg transition-colors"
+                      >
+                        {pct === 1 ? "Max" : `${pct * 100}%`}
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : fundModal.wallet ? (
                 <div className="flex gap-2">
                   {[10, 25, 50, 100].map((v) => (
                     <button
@@ -1134,11 +1247,9 @@ export default function CardsPage() {
                     </button>
                   ))}
                 </div>
-              )}
+              ) : null}
 
-              {fundError && (
-                <p className="text-xs text-red-400">{fundError}</p>
-              )}
+              {fundError && <p className="text-xs text-red-400">{fundError}</p>}
 
               <div className="flex gap-3 pt-1">
                 <Button variant="secondary" className="flex-1" onClick={() => setFundModal(null)}>

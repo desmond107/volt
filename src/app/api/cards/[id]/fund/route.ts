@@ -16,12 +16,43 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
     const card = await prisma.virtualCard.findUnique({
       where: { id },
-      include: { wallet: true },
+      include: { wallet: true, fiatWallet: true },
     });
 
     if (!card || card.userId !== session.id) {
       return NextResponse.json({ error: "Card not found" }, { status: 404 });
     }
+
+    // Fund from fiat wallet (multi-currency)
+    if (card.fiatWalletId && card.fiatWallet) {
+      if (card.fiatWallet.balance.toNumber() < amount) {
+        return NextResponse.json({ error: "Insufficient wallet balance" }, { status: 400 });
+      }
+      const { walletBal, cardBal } = await prisma.$transaction(async (tx) => {
+        const w = await tx.fiatWallet.update({
+          where: { id: card.fiatWalletId! },
+          data: { balance: { decrement: amount } },
+        });
+        const c = await tx.virtualCard.update({
+          where: { id },
+          data: { balance: { increment: amount } },
+        });
+        await tx.fiatTransaction.create({
+          data: {
+            userId: session.id,
+            walletId: card.fiatWalletId!,
+            type: "CARD_FUNDING",
+            amount,
+            currency: card.currency,
+            description: `Funded card "${card.label ?? "card"}" from ${card.fiatWallet!.currency} wallet`,
+          },
+        });
+        return { walletBal: w.balance.toNumber(), cardBal: c.balance.toNumber() };
+      });
+      return NextResponse.json({ ok: true, cardBalance: cardBal, walletBalance: walletBal });
+    }
+
+    // Fund from crypto wallet
     if (!card.wallet) {
       return NextResponse.json({ error: "No wallet linked to this card" }, { status: 400 });
     }
