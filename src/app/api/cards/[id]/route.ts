@@ -23,14 +23,21 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       }
     }
 
+    // Auto-unfreeze: if freezeUntil has passed, clear it and set status to ACTIVE
+    if (card.status === "FROZEN" && card.freezeUntil && new Date() >= card.freezeUntil) {
+      await prisma.virtualCard.update({ where: { id }, data: { status: "ACTIVE", freezeUntil: null } });
+    }
+
     const updated = await prisma.virtualCard.update({
       where: { id },
       data: {
-        ...(body.status !== undefined     && { status: body.status }),
-        ...(body.label !== undefined      && { label: body.label }),
-        ...(body.spendLimit !== undefined && { spendLimit: body.spendLimit }),
-        ...(body.nfcEnabled !== undefined && { nfcEnabled: body.nfcEnabled }),
-        ...("walletId" in body            && { walletId: body.walletId ?? null }),
+        ...(body.status !== undefined      && { status: body.status }),
+        ...(body.label !== undefined       && { label: body.label }),
+        ...(body.spendLimit !== undefined  && { spendLimit: body.spendLimit }),
+        ...(body.nfcEnabled !== undefined  && { nfcEnabled: body.nfcEnabled }),
+        ...(body.oneTimeUse !== undefined  && { oneTimeUse: body.oneTimeUse }),
+        ...("walletId" in body             && { walletId: body.walletId ?? null }),
+        ...("freezeUntil" in body          && { freezeUntil: body.freezeUntil ? new Date(body.freezeUntil) : null }),
       },
       include: { wallet: { select: { id: true, asset: true, network: true, balance: true } } },
     });

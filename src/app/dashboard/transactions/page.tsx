@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from "react";
 import TopBar from "@/components/dashboard/TopBar";
 import { formatCurrency, formatDateTime, getTransactionColor, getStatusColor } from "@/lib/utils";
-import { ArrowDownRight, ArrowUpRight, CreditCard, Search, Filter, Download } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, CreditCard, Search, Filter, Download, Globe } from "lucide-react";
 
 interface Transaction {
   id: string;
@@ -19,9 +19,21 @@ interface Transaction {
   card?: { label: string; cardNumber: string } | null;
 }
 
-const TYPES = ["ALL", "DEPOSIT", "CARD_PAYMENT", "WITHDRAWAL", "TRANSFER", "CARD_FUNDING", "CONVERSION"];
+interface FiatTransaction {
+  id: string;
+  type: string;
+  amount: number;
+  currency: string;
+  description?: string;
+  reference: string;
+  createdAt: string;
+  wallet?: { name: string; currency: string } | null;
+}
 
-function exportCSV(transactions: Transaction[]) {
+const CRYPTO_TYPES = ["ALL", "DEPOSIT", "CARD_PAYMENT", "WITHDRAWAL", "TRANSFER", "CARD_FUNDING", "CONVERSION"];
+const FIAT_TYPES = ["ALL", "DEPOSIT", "WITHDRAWAL", "TRANSFER", "CARD_PAYMENT", "SEND", "RECEIVE", "CONVERSION"];
+
+function exportCryptoCSV(transactions: Transaction[]) {
   const headers = ["Date", "Type", "Status", "Merchant/Description", "Category", "Reference", "Amount", "Fee", "Currency"];
   const rows = transactions.map((t) => [
     new Date(t.createdAt).toISOString(),
@@ -35,58 +47,120 @@ function exportCSV(transactions: Transaction[]) {
     t.currency,
   ]);
   const csv = [headers, ...rows].map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
+  downloadCSV(csv, "volt-transactions");
+}
+
+function exportFiatCSV(transactions: FiatTransaction[]) {
+  const headers = ["Date", "Type", "Wallet", "Description", "Reference", "Amount", "Currency"];
+  const rows = transactions.map((t) => [
+    new Date(t.createdAt).toISOString(),
+    t.type,
+    t.wallet?.name ?? "",
+    t.description ?? "",
+    t.reference,
+    t.amount,
+    t.currency,
+  ]);
+  const csv = [headers, ...rows].map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
+  downloadCSV(csv, "volt-fiat-transactions");
+}
+
+function downloadCSV(csv: string, name: string) {
   const blob = new Blob([csv], { type: "text/csv" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `volt-transactions-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.download = `${name}-${new Date().toISOString().slice(0, 10)}.csv`;
   a.click();
   URL.revokeObjectURL(url);
 }
 
+const typeIcons: Record<string, React.ReactNode> = {
+  DEPOSIT: <ArrowDownRight className="w-4 h-4 text-emerald-400" />,
+  CARD_PAYMENT: <ArrowUpRight className="w-4 h-4 text-red-400" />,
+  WITHDRAWAL: <ArrowUpRight className="w-4 h-4 text-orange-400" />,
+  TRANSFER: <ArrowUpRight className="w-4 h-4 text-blue-400" />,
+  CONVERSION: <ArrowUpRight className="w-4 h-4 text-violet-400" />,
+  CARD_FUNDING: <CreditCard className="w-4 h-4 text-blue-400" />,
+  SEND: <ArrowUpRight className="w-4 h-4 text-orange-400" />,
+  RECEIVE: <ArrowDownRight className="w-4 h-4 text-emerald-400" />,
+};
+
 export default function TransactionsPage() {
+  const [tab, setTab] = useState<"crypto" | "fiat">("crypto");
+
+  // Crypto state
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [type, setType] = useState("ALL");
+  const [cryptoLoading, setCryptoLoading] = useState(true);
+  const [cryptoType, setCryptoType] = useState("ALL");
+  const [cryptoPage, setCryptoPage] = useState(1);
+  const [cryptoTotalPages, setCryptoTotalPages] = useState(1);
+  const [cryptoDateFrom, setCryptoDateFrom] = useState("");
+  const [cryptoDateTo, setCryptoDateTo] = useState("");
+
+  // Fiat state
+  const [fiatTxns, setFiatTxns] = useState<FiatTransaction[]>([]);
+  const [fiatLoading, setFiatLoading] = useState(true);
+  const [fiatType, setFiatType] = useState("ALL");
+  const [fiatPage, setFiatPage] = useState(1);
+  const [fiatTotalPages, setFiatTotalPages] = useState(1);
+  const [fiatDateFrom, setFiatDateFrom] = useState("");
+  const [fiatDateTo, setFiatDateTo] = useState("");
+
+  // Shared
   const [search, setSearch] = useState("");
-  const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
   const [exporting, setExporting] = useState(false);
 
-  const fetchTxns = useCallback(async () => {
-    setLoading(true);
-    const params = new URLSearchParams({ page: String(page), limit: "15", type });
-    if (dateFrom) params.set("dateFrom", dateFrom);
-    if (dateTo) params.set("dateTo", dateTo);
+  const fetchCrypto = useCallback(async () => {
+    setCryptoLoading(true);
+    const params = new URLSearchParams({ page: String(cryptoPage), limit: "15", type: cryptoType });
+    if (cryptoDateFrom) params.set("dateFrom", cryptoDateFrom);
+    if (cryptoDateTo) params.set("dateTo", cryptoDateTo);
     const res = await fetch(`/api/transactions?${params}`);
     if (res.ok) {
       const data = await res.json();
       setTransactions(data.transactions);
-      setTotalPages(data.pages);
+      setCryptoTotalPages(data.pages);
     }
-    setLoading(false);
-  }, [page, type, dateFrom, dateTo]);
+    setCryptoLoading(false);
+  }, [cryptoPage, cryptoType, cryptoDateFrom, cryptoDateTo]);
 
-  useEffect(() => {
-    fetchTxns();
-  }, [fetchTxns]);
+  const fetchFiat = useCallback(async () => {
+    setFiatLoading(true);
+    const params = new URLSearchParams({ page: String(fiatPage), limit: "15", type: fiatType });
+    if (fiatDateFrom) params.set("dateFrom", fiatDateFrom);
+    if (fiatDateTo) params.set("dateTo", fiatDateTo);
+    const res = await fetch(`/api/fiat-transactions?${params}`);
+    if (res.ok) {
+      const data = await res.json();
+      setFiatTxns(data.transactions);
+      setFiatTotalPages(data.pages);
+    }
+    setFiatLoading(false);
+  }, [fiatPage, fiatType, fiatDateFrom, fiatDateTo]);
+
+  useEffect(() => { fetchCrypto(); }, [fetchCrypto]);
+  useEffect(() => { fetchFiat(); }, [fetchFiat]);
 
   const handleExport = async () => {
     setExporting(true);
-    const params = new URLSearchParams({ page: "1", limit: "1000", type });
-    if (dateFrom) params.set("dateFrom", dateFrom);
-    if (dateTo) params.set("dateTo", dateTo);
-    const res = await fetch(`/api/transactions?${params}`);
-    if (res.ok) {
-      const data = await res.json();
-      exportCSV(data.transactions);
+    if (tab === "crypto") {
+      const params = new URLSearchParams({ page: "1", limit: "1000", type: cryptoType });
+      if (cryptoDateFrom) params.set("dateFrom", cryptoDateFrom);
+      if (cryptoDateTo) params.set("dateTo", cryptoDateTo);
+      const res = await fetch(`/api/transactions?${params}`);
+      if (res.ok) exportCryptoCSV((await res.json()).transactions);
+    } else {
+      const params = new URLSearchParams({ page: "1", limit: "1000", type: fiatType });
+      if (fiatDateFrom) params.set("dateFrom", fiatDateFrom);
+      if (fiatDateTo) params.set("dateTo", fiatDateTo);
+      const res = await fetch(`/api/fiat-transactions?${params}`);
+      if (res.ok) exportFiatCSV((await res.json()).transactions);
     }
     setExporting(false);
   };
 
-  const filtered = transactions.filter((t) => {
+  const filteredCrypto = transactions.filter((t) => {
     if (!search) return true;
     const q = search.toLowerCase();
     return (
@@ -97,20 +171,51 @@ export default function TransactionsPage() {
     );
   });
 
-  const typeIcons: Record<string, React.ReactNode> = {
-    DEPOSIT: <ArrowDownRight className="w-4 h-4 text-emerald-400" />,
-    CARD_PAYMENT: <ArrowUpRight className="w-4 h-4 text-red-400" />,
-    WITHDRAWAL: <ArrowUpRight className="w-4 h-4 text-orange-400" />,
-    TRANSFER: <ArrowUpRight className="w-4 h-4 text-blue-400" />,
-    CONVERSION: <ArrowUpRight className="w-4 h-4 text-violet-400" />,
-    CARD_FUNDING: <CreditCard className="w-4 h-4 text-blue-400" />,
-  };
+  const filteredFiat = fiatTxns.filter((t) => {
+    if (!search) return true;
+    const q = search.toLowerCase();
+    return (
+      t.description?.toLowerCase().includes(q) ||
+      t.reference.toLowerCase().includes(q) ||
+      t.wallet?.name.toLowerCase().includes(q)
+    );
+  });
+
+  const isFiatCredit = (type: string) => ["DEPOSIT", "RECEIVE"].includes(type);
+  const isCryptoCredit = (type: string, ref: string) =>
+    type === "DEPOSIT" || (type === "TRANSFER" && ref.endsWith("-IN"));
 
   return (
     <div className="flex flex-col flex-1 overflow-y-auto">
       <TopBar title="Transactions" subtitle="Your complete payment history" />
 
       <main className="flex-1 p-6 space-y-5">
+        {/* Tabs */}
+        <div className="flex gap-1 p-1 bg-[#061120] border border-[#0d2040] rounded-xl w-fit">
+          <button
+            onClick={() => setTab("crypto")}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              tab === "crypto"
+                ? "bg-blue-600 text-white"
+                : "text-[#6b88b0] hover:text-white"
+            }`}
+          >
+            <CreditCard className="w-4 h-4" />
+            Digital Currency
+          </button>
+          <button
+            onClick={() => setTab("fiat")}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              tab === "fiat"
+                ? "bg-blue-600 text-white"
+                : "text-[#6b88b0] hover:text-white"
+            }`}
+          >
+            <Globe className="w-4 h-4" />
+            Multi-Currency
+          </button>
+        </div>
+
         {/* Filters */}
         <div className="flex flex-col sm:flex-row gap-3 flex-wrap">
           <div className="relative flex-1 min-w-50 max-w-sm">
@@ -126,30 +231,48 @@ export default function TransactionsPage() {
 
           <div className="flex items-center gap-2">
             <Filter className="w-4 h-4 text-[#6b88b0] shrink-0" />
-            <select
-              value={type}
-              onChange={(e) => { setType(e.target.value); setPage(1); }}
-              className="text-sm"
-            >
-              {TYPES.map((t) => (
-                <option key={t} value={t}>{t === "ALL" ? "All Types" : t.replace(/_/g, " ")}</option>
-              ))}
-            </select>
+            {tab === "crypto" ? (
+              <select
+                value={cryptoType}
+                onChange={(e) => { setCryptoType(e.target.value); setCryptoPage(1); }}
+                className="text-sm"
+              >
+                {CRYPTO_TYPES.map((t) => (
+                  <option key={t} value={t}>{t === "ALL" ? "All Types" : t.replace(/_/g, " ")}</option>
+                ))}
+              </select>
+            ) : (
+              <select
+                value={fiatType}
+                onChange={(e) => { setFiatType(e.target.value); setFiatPage(1); }}
+                className="text-sm"
+              >
+                {FIAT_TYPES.map((t) => (
+                  <option key={t} value={t}>{t === "ALL" ? "All Types" : t.replace(/_/g, " ")}</option>
+                ))}
+              </select>
+            )}
           </div>
 
           <div className="flex items-center gap-2">
             <input
               type="date"
-              value={dateFrom}
-              onChange={(e) => { setDateFrom(e.target.value); setPage(1); }}
+              value={tab === "crypto" ? cryptoDateFrom : fiatDateFrom}
+              onChange={(e) => {
+                if (tab === "crypto") { setCryptoDateFrom(e.target.value); setCryptoPage(1); }
+                else { setFiatDateFrom(e.target.value); setFiatPage(1); }
+              }}
               className="text-sm px-3 py-2 bg-[#061120] border border-[#0d2040] rounded-lg text-[#6b88b0] focus:outline-none focus:border-blue-500/50"
               title="From date"
             />
             <span className="text-[#6b88b0] text-xs">to</span>
             <input
               type="date"
-              value={dateTo}
-              onChange={(e) => { setDateTo(e.target.value); setPage(1); }}
+              value={tab === "crypto" ? cryptoDateTo : fiatDateTo}
+              onChange={(e) => {
+                if (tab === "crypto") { setCryptoDateTo(e.target.value); setCryptoPage(1); }
+                else { setFiatDateTo(e.target.value); setFiatPage(1); }
+              }}
               className="text-sm px-3 py-2 bg-[#061120] border border-[#0d2040] rounded-lg text-[#6b88b0] focus:outline-none focus:border-blue-500/50"
               title="To date"
             />
@@ -169,95 +292,170 @@ export default function TransactionsPage() {
         {/* Table */}
         <div className="bg-[#061120] border border-[#0d2040] rounded-xl overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-[#0d2040]">
-                  <th className="text-left px-5 py-3.5 text-xs text-[#6b88b0] uppercase tracking-wider font-medium">Transaction</th>
-                  <th className="text-left px-4 py-3.5 text-xs text-[#6b88b0] uppercase tracking-wider font-medium hidden md:table-cell">Type</th>
-                  <th className="text-left px-4 py-3.5 text-xs text-[#6b88b0] uppercase tracking-wider font-medium hidden lg:table-cell">Reference</th>
-                  <th className="text-left px-4 py-3.5 text-xs text-[#6b88b0] uppercase tracking-wider font-medium">Status</th>
-                  <th className="text-right px-5 py-3.5 text-xs text-[#6b88b0] uppercase tracking-wider font-medium">Amount</th>
-                </tr>
-              </thead>
-              <tbody>
-                {loading ? (
-                  Array.from({ length: 8 }).map((_, i) => (
-                    <tr key={i} className="border-b border-[#0d2040]">
-                      {[1, 2, 3, 4, 5].map((j) => (
-                        <td key={j} className="px-5 py-4">
-                          <div className="h-4 bg-[#0d2040] rounded animate-pulse" />
-                        </td>
-                      ))}
-                    </tr>
-                  ))
-                ) : filtered.length === 0 ? (
-                  <tr>
-                    <td colSpan={5} className="text-center py-16 text-[#6b88b0]">
-                      No transactions found
-                    </td>
+            {tab === "crypto" ? (
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-[#0d2040]">
+                    <th className="text-left px-5 py-3.5 text-xs text-[#6b88b0] uppercase tracking-wider font-medium">Transaction</th>
+                    <th className="text-left px-4 py-3.5 text-xs text-[#6b88b0] uppercase tracking-wider font-medium hidden md:table-cell">Type</th>
+                    <th className="text-left px-4 py-3.5 text-xs text-[#6b88b0] uppercase tracking-wider font-medium hidden lg:table-cell">Reference</th>
+                    <th className="text-left px-4 py-3.5 text-xs text-[#6b88b0] uppercase tracking-wider font-medium">Status</th>
+                    <th className="text-right px-5 py-3.5 text-xs text-[#6b88b0] uppercase tracking-wider font-medium">Amount</th>
                   </tr>
-                ) : (
-                  filtered.map((t) => {
-                    const isCredit = t.type === "DEPOSIT" || (t.type === "TRANSFER" && t.reference.endsWith("-IN"));
-                    return (
-                      <tr key={t.id} className="border-b border-[#0d2040] last:border-0 hover:bg-[#0d2040]/30 transition-colors">
-                        <td className="px-5 py-4">
-                          <div className="flex items-center gap-3">
-                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${isCredit ? "bg-emerald-500/10" : "bg-red-500/10"}`}>
-                              {typeIcons[t.type]}
-                            </div>
-                            <div>
-                              <div className="font-medium text-white">
-                                {t.merchant || t.description || t.type.replace(/_/g, " ")}
-                              </div>
-                              <div className="text-xs text-[#6b88b0]">
-                                {formatDateTime(t.createdAt)}
-                                {t.card && <span className="ml-2">· {t.card.label}</span>}
-                                {t.category && <span className="ml-2 text-[#4a6080]">· {t.category}</span>}
-                              </div>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-4 py-4 hidden md:table-cell">
-                          <span className="text-xs text-[#6b88b0]">{t.type.replace(/_/g, " ")}</span>
-                        </td>
-                        <td className="px-4 py-4 hidden lg:table-cell">
-                          <span className="text-xs font-mono text-[#6b88b0]">{t.reference.slice(0, 16)}...</span>
-                        </td>
-                        <td className="px-4 py-4">
-                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${getStatusColor(t.status)}`}>
-                            {t.status}
-                          </span>
-                        </td>
-                        <td className={`px-5 py-4 text-right font-semibold ${getTransactionColor(t.type)}`}>
-                          {isCredit ? "+" : "-"}{formatCurrency(t.amount, t.currency)}
-                          {t.fee > 0 && (
-                            <div className="text-xs text-[#6b88b0] font-normal">fee: {formatCurrency(t.fee)}</div>
-                          )}
-                        </td>
+                </thead>
+                <tbody>
+                  {cryptoLoading ? (
+                    Array.from({ length: 8 }).map((_, i) => (
+                      <tr key={i} className="border-b border-[#0d2040]">
+                        {[1, 2, 3, 4, 5].map((j) => (
+                          <td key={j} className="px-5 py-4">
+                            <div className="h-4 bg-[#0d2040] rounded animate-pulse" />
+                          </td>
+                        ))}
                       </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
+                    ))
+                  ) : filteredCrypto.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="text-center py-16 text-[#6b88b0]">No transactions found</td>
+                    </tr>
+                  ) : (
+                    filteredCrypto.map((t) => {
+                      const isCredit = isCryptoCredit(t.type, t.reference);
+                      return (
+                        <tr key={t.id} className="border-b border-[#0d2040] last:border-0 hover:bg-[#0d2040]/30 transition-colors">
+                          <td className="px-5 py-4">
+                            <div className="flex items-center gap-3">
+                              <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${isCredit ? "bg-emerald-500/10" : "bg-red-500/10"}`}>
+                                {typeIcons[t.type]}
+                              </div>
+                              <div>
+                                <div className="font-medium text-white">
+                                  {t.merchant || t.description || t.type.replace(/_/g, " ")}
+                                </div>
+                                <div className="text-xs text-[#6b88b0]">
+                                  {formatDateTime(t.createdAt)}
+                                  {t.card && <span className="ml-2">· {t.card.label}</span>}
+                                  {t.category && <span className="ml-2 text-[#4a6080]">· {t.category}</span>}
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-4 py-4 hidden md:table-cell">
+                            <span className="text-xs text-[#6b88b0]">{t.type.replace(/_/g, " ")}</span>
+                          </td>
+                          <td className="px-4 py-4 hidden lg:table-cell">
+                            <span className="text-xs font-mono text-[#6b88b0]">{t.reference.slice(0, 16)}...</span>
+                          </td>
+                          <td className="px-4 py-4">
+                            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${getStatusColor(t.status)}`}>
+                              {t.status}
+                            </span>
+                          </td>
+                          <td className={`px-5 py-4 text-right font-semibold ${getTransactionColor(t.type)}`}>
+                            {isCredit ? "+" : "-"}{formatCurrency(t.amount, t.currency)}
+                            {t.fee > 0 && (
+                              <div className="text-xs text-[#6b88b0] font-normal">fee: {formatCurrency(t.fee)}</div>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            ) : (
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-[#0d2040]">
+                    <th className="text-left px-5 py-3.5 text-xs text-[#6b88b0] uppercase tracking-wider font-medium">Transaction</th>
+                    <th className="text-left px-4 py-3.5 text-xs text-[#6b88b0] uppercase tracking-wider font-medium hidden md:table-cell">Type</th>
+                    <th className="text-left px-4 py-3.5 text-xs text-[#6b88b0] uppercase tracking-wider font-medium hidden md:table-cell">Wallet</th>
+                    <th className="text-left px-4 py-3.5 text-xs text-[#6b88b0] uppercase tracking-wider font-medium hidden lg:table-cell">Reference</th>
+                    <th className="text-right px-5 py-3.5 text-xs text-[#6b88b0] uppercase tracking-wider font-medium">Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {fiatLoading ? (
+                    Array.from({ length: 8 }).map((_, i) => (
+                      <tr key={i} className="border-b border-[#0d2040]">
+                        {[1, 2, 3, 4, 5].map((j) => (
+                          <td key={j} className="px-5 py-4">
+                            <div className="h-4 bg-[#0d2040] rounded animate-pulse" />
+                          </td>
+                        ))}
+                      </tr>
+                    ))
+                  ) : filteredFiat.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="text-center py-16 text-[#6b88b0]">No transactions found</td>
+                    </tr>
+                  ) : (
+                    filteredFiat.map((t) => {
+                      const isCredit = isFiatCredit(t.type);
+                      return (
+                        <tr key={t.id} className="border-b border-[#0d2040] last:border-0 hover:bg-[#0d2040]/30 transition-colors">
+                          <td className="px-5 py-4">
+                            <div className="flex items-center gap-3">
+                              <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${isCredit ? "bg-emerald-500/10" : "bg-red-500/10"}`}>
+                                {typeIcons[t.type] ?? <ArrowUpRight className="w-4 h-4 text-[#6b88b0]" />}
+                              </div>
+                              <div>
+                                <div className="font-medium text-white">
+                                  {t.description || t.type.replace(/_/g, " ")}
+                                </div>
+                                <div className="text-xs text-[#6b88b0]">
+                                  {formatDateTime(t.createdAt)}
+                                  {t.wallet && <span className="ml-2">· {t.wallet.name}</span>}
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-4 py-4 hidden md:table-cell">
+                            <span className="text-xs text-[#6b88b0]">{t.type.replace(/_/g, " ")}</span>
+                          </td>
+                          <td className="px-4 py-4 hidden md:table-cell">
+                            {t.wallet ? (
+                              <div className="flex items-center gap-1.5">
+                                <Globe className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+                                <span className="text-xs text-[#6b88b0]">{t.wallet.name}</span>
+                                <span className="text-xs text-[#4a6080]">· {t.wallet.currency}</span>
+                              </div>
+                            ) : (
+                              <span className="text-xs text-[#4a6080]">—</span>
+                            )}
+                          </td>
+                          <td className="px-4 py-4 hidden lg:table-cell">
+                            <span className="text-xs font-mono text-[#6b88b0]">{t.reference.slice(0, 16)}...</span>
+                          </td>
+                          <td className={`px-5 py-4 text-right font-semibold ${isCredit ? "text-emerald-400" : "text-red-400"}`}>
+                            {isCredit ? "+" : "-"}{formatCurrency(t.amount, t.currency)}
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            )}
           </div>
 
           {/* Pagination */}
-          {totalPages > 1 && (
+          {(tab === "crypto" ? cryptoTotalPages : fiatTotalPages) > 1 && (
             <div className="flex items-center justify-between px-5 py-4 border-t border-[#0d2040]">
-              <span className="text-xs text-[#6b88b0]">Page {page} of {totalPages}</span>
+              <span className="text-xs text-[#6b88b0]">
+                Page {tab === "crypto" ? cryptoPage : fiatPage} of {tab === "crypto" ? cryptoTotalPages : fiatTotalPages}
+              </span>
               <div className="flex gap-2">
                 <button
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  disabled={page === 1}
+                  onClick={() => tab === "crypto" ? setCryptoPage((p) => Math.max(1, p - 1)) : setFiatPage((p) => Math.max(1, p - 1))}
+                  disabled={(tab === "crypto" ? cryptoPage : fiatPage) === 1}
                   className="px-3 py-1.5 text-xs text-[#6b88b0] bg-[#020c1b] border border-[#0d2040] rounded-lg hover:text-white disabled:opacity-40 transition-colors"
                 >
                   Previous
                 </button>
                 <button
-                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                  disabled={page === totalPages}
+                  onClick={() => tab === "crypto" ? setCryptoPage((p) => Math.min(cryptoTotalPages, p + 1)) : setFiatPage((p) => Math.min(fiatTotalPages, p + 1))}
+                  disabled={(tab === "crypto" ? cryptoPage : fiatPage) === (tab === "crypto" ? cryptoTotalPages : fiatTotalPages)}
                   className="px-3 py-1.5 text-xs text-[#6b88b0] bg-[#020c1b] border border-[#0d2040] rounded-lg hover:text-white disabled:opacity-40 transition-colors"
                 >
                   Next

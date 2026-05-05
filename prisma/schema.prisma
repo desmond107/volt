@@ -62,12 +62,14 @@ model VirtualCard {
   spendLimit    Decimal  @default(1000)
   spentAmount   Decimal  @default(0)
   balance       Decimal  @default(0)
-  nfcEnabled    Boolean  @default(true)
-  currency      String   @default("USD")
+  nfcEnabled    Boolean   @default(true)
+  currency      String    @default("USD")
   label         String?
-  color         String   @default("#6366f1")
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  color         String    @default("#6366f1")
+  oneTimeUse    Boolean   @default(false)
+  freezeUntil   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
   user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   wallet       Wallet?     @relation(fields: [walletId], references: [id])

@@ -5,7 +5,7 @@ import TopBar from "@/components/dashboard/TopBar";
 import VirtualCardFace, { getTheme } from "@/components/ui/VirtualCardFace";
 import EagleLogo from "@/components/ui/EagleLogo";
 import { formatCurrency, maskCardNumber } from "@/lib/utils";
-import { Plus, CreditCard, Eye, EyeOff, Snowflake, Trash2, AlertCircle, Link2, Link2Off, X, ArrowDownLeft, Wifi, WifiOff, Maximize2, ShoppingCart, CheckCircle2, ChevronRight, SlidersHorizontal, Globe, Truck } from "lucide-react";
+import { Plus, CreditCard, Eye, EyeOff, Snowflake, Trash2, AlertCircle, Link2, Link2Off, X, ArrowDownLeft, Wifi, WifiOff, Maximize2, ShoppingCart, CheckCircle2, ChevronRight, SlidersHorizontal, Globe, Truck, Timer, Flame } from "lucide-react";
 import Button from "@/components/ui/Button";
 import Link from "next/link";
 
@@ -43,6 +43,8 @@ interface VirtualCard {
   wallet: LinkedWallet | null;
   fiatWalletId: string | null;
   fiatWallet: LinkedFiatWallet | null;
+  oneTimeUse: boolean;
+  freezeUntil: string | null;
 }
 
 interface Wallet {
@@ -507,6 +509,9 @@ export default function CardsPage() {
   const [newLimit, setNewLimit] = useState("");
   const [limitLoading, setLimitLoading] = useState(false);
   const [limitError, setLimitError] = useState("");
+  const [freezeModal, setFreezeModal] = useState<VirtualCard | null>(null);
+  const [freezeDuration, setFreezeDuration] = useState("1h");
+  const [freezeLoading, setFreezeLoading] = useState(false);
 
   const [newCard, setNewCard] = useState({
     label: "",
@@ -514,6 +519,7 @@ export default function CardsPage() {
     color: "#6366f1",
     currency: "USD",
     brand: "VISA",
+    oneTimeUse: false,
   });
 
   const fetchCards = useCallback(async () => {
@@ -549,9 +555,17 @@ export default function CardsPage() {
       body: JSON.stringify(newCard),
     });
     if (res.ok) {
+      const { card: created } = await res.json();
+      if (newCard.oneTimeUse && created?.id) {
+        await fetch(`/api/cards/${created.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ oneTimeUse: true }),
+        });
+      }
       await fetchCards();
       setShowModal(false);
-      setNewCard({ label: "", spendLimit: 500, color: "#6366f1", currency: "USD", brand: "VISA" });
+      setNewCard({ label: "", spendLimit: 500, color: "#6366f1", currency: "USD", brand: "VISA", oneTimeUse: false });
     }
     setActionLoading(null);
   };
@@ -624,6 +638,22 @@ export default function CardsPage() {
     setLimitLoading(false);
   };
 
+  const handleTimedFreeze = async () => {
+    if (!freezeModal) return;
+    setFreezeLoading(true);
+    const durations: Record<string, number> = { "30m": 30, "1h": 60, "2h": 120, "6h": 360, "12h": 720, "24h": 1440, "48h": 2880, "7d": 10080 };
+    const mins = durations[freezeDuration] ?? 60;
+    const freezeUntil = new Date(Date.now() + mins * 60000).toISOString();
+    await fetch(`/api/cards/${freezeModal.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: "FROZEN", freezeUntil }),
+    });
+    await fetchCards();
+    setFreezeModal(null);
+    setFreezeLoading(false);
+  };
+
   const handleFund = async () => {
     if (!fundModal) return;
     const amount = parseFloat(fundAmount);
@@ -661,7 +691,12 @@ export default function CardsPage() {
     return (
       <div key={card.id} className="space-y-3">
         <div className="flex items-center justify-between px-1">
-          <span className="text-sm font-medium text-white">{card.label}</span>
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-white">{card.label}</span>
+            {card.oneTimeUse && (
+              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-violet-500/15 text-violet-300 border border-violet-500/25">1×</span>
+            )}
+          </div>
           <span className="text-xs text-[#6b88b0]">{card.spendLimit === 0 ? "No Limit" : `${formatCurrency(card.spendLimit)} limit`}</span>
         </div>
 
@@ -719,6 +754,16 @@ export default function CardsPage() {
             </div>
           )}
         </div>
+
+        {/* Freeze countdown badge */}
+        {frozen && card.freezeUntil && (
+          <div className="flex items-center gap-2 bg-sky-500/5 border border-sky-500/20 rounded-lg px-3 py-2">
+            <Timer className="w-3.5 h-3.5 text-sky-400 shrink-0" />
+            <span className="text-xs text-sky-300">
+              Auto-unfreezes {new Date(card.freezeUntil) <= new Date() ? "soon" : `at ${new Date(card.freezeUntil).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} on ${new Date(card.freezeUntil).toLocaleDateString()}`}
+            </span>
+          </div>
+        )}
 
         {/* Linked wallet badge */}
         {card.fiatWallet ? (
@@ -812,14 +857,24 @@ export default function CardsPage() {
             {card.nfcEnabled ? <Wifi className="w-4 h-4" /> : <WifiOff className="w-4 h-4" />}
             NFC
           </button>
-          <button
-            onClick={() => handleFreeze(card.id, card.status)}
-            disabled={actionLoading === card.id}
-            className="flex flex-col items-center justify-center gap-1 py-2.5 text-xs font-medium text-sky-300 hover:text-sky-100 bg-[#061120] border border-sky-500/20 rounded-lg hover:border-sky-500/50 transition-colors disabled:opacity-50"
-          >
-            <Snowflake className="w-4 h-4" />
-            {frozen ? "Unfreeze" : "Freeze"}
-          </button>
+          {frozen ? (
+            <button
+              onClick={() => handleFreeze(card.id, card.status)}
+              disabled={actionLoading === card.id}
+              className="flex flex-col items-center justify-center gap-1 py-2.5 text-xs font-medium text-sky-300 hover:text-sky-100 bg-[#061120] border border-sky-500/20 rounded-lg hover:border-sky-500/50 transition-colors disabled:opacity-50"
+            >
+              <Snowflake className="w-4 h-4" />
+              Unfreeze
+            </button>
+          ) : (
+            <button
+              onClick={() => { setFreezeModal(card); setFreezeDuration("1h"); }}
+              className="flex flex-col items-center justify-center gap-1 py-2.5 text-xs font-medium text-sky-300 hover:text-sky-100 bg-[#061120] border border-sky-500/20 rounded-lg hover:border-sky-500/50 transition-colors"
+            >
+              <Snowflake className="w-4 h-4" />
+              Freeze
+            </button>
+          )}
           <button
             onClick={() => { setLimitModal(card); setNewLimit(card.spendLimit === 0 ? "0" : String(card.spendLimit)); setLimitError(""); }}
             title="Edit spend limit"
@@ -1061,6 +1116,28 @@ export default function CardsPage() {
                 </div>
               </div>
 
+              {/* One-time-use toggle */}
+              <button
+                type="button"
+                onClick={() => setNewCard({ ...newCard, oneTimeUse: !newCard.oneTimeUse })}
+                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl border text-xs font-medium transition-all ${
+                  newCard.oneTimeUse
+                    ? "border-violet-500/50 bg-violet-500/10 text-violet-300"
+                    : "border-[#0d2040] text-[#6b88b0] hover:border-violet-500/30 hover:text-violet-400"
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <Flame className="w-3.5 h-3.5" />
+                  <div className="text-left">
+                    <div>One-time use</div>
+                    <div className="text-[10px] font-normal opacity-70 mt-0.5">Card auto-terminates after the first successful payment</div>
+                  </div>
+                </div>
+                <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors shrink-0 ${newCard.oneTimeUse ? "border-violet-400 bg-violet-400" : "border-[#3a5a80]"}`}>
+                  {newCard.oneTimeUse && <div className="w-1.5 h-1.5 rounded-full bg-[#061120]" />}
+                </div>
+              </button>
+
               <div>
                 <label className="block text-sm font-medium text-[#c0d4ef] mb-2">Preview</label>
                 <VirtualCardFace
@@ -1087,7 +1164,7 @@ export default function CardsPage() {
                 onClick={handleCreate}
                 disabled={!newCard.label}
               >
-                Issue Card
+                {newCard.oneTimeUse ? "Issue One-Time Card" : "Issue Card"}
               </Button>
             </div>
           </div>
@@ -1413,6 +1490,52 @@ export default function CardsPage() {
               >
                 {actionLoading === deleteConfirm.id ? "Deleting…" : "Yes, Delete Card"}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Timed freeze modal */}
+      {freezeModal && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-[#061120] border border-[#0d2040] rounded-2xl w-full max-w-sm">
+            <div className="flex items-center justify-between p-5 border-b border-[#0d2040]">
+              <div>
+                <h2 className="text-base font-semibold text-white">Freeze Card</h2>
+                <p className="text-xs text-[#6b88b0] mt-0.5">{freezeModal.label}</p>
+              </div>
+              <button onClick={() => setFreezeModal(null)} className="p-1.5 text-[#6b88b0] hover:text-white rounded-lg hover:bg-[#0d2040] transition-colors">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="p-5 space-y-4">
+              <p className="text-xs text-[#6b88b0]">Choose how long to freeze this card. It will auto-unfreeze when the timer expires.</p>
+              <div className="grid grid-cols-4 gap-2">
+                {["30m", "1h", "2h", "6h", "12h", "24h", "48h", "7d"].map((d) => (
+                  <button
+                    key={d}
+                    onClick={() => setFreezeDuration(d)}
+                    className={`py-2 rounded-xl border text-xs font-medium transition-all ${
+                      freezeDuration === d
+                        ? "border-sky-500/50 bg-sky-500/10 text-sky-300"
+                        : "border-[#0d2040] text-[#6b88b0] hover:border-sky-500/30"
+                    }`}
+                  >
+                    {d}
+                  </button>
+                ))}
+              </div>
+              <div className="flex gap-3 pt-1">
+                <Button variant="secondary" className="flex-1" onClick={() => setFreezeModal(null)}>Cancel</Button>
+                <Button
+                  className="flex-1 !bg-sky-700/30 !border-sky-500/40 hover:!bg-sky-700/50 !text-sky-300"
+                  loading={freezeLoading}
+                  onClick={handleTimedFreeze}
+                >
+                  <Snowflake className="w-4 h-4" />
+                  Freeze for {freezeDuration}
+                </Button>
+              </div>
             </div>
           </div>
         </div>

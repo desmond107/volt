@@ -14,15 +14,21 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       return NextResponse.json({ error: "Invalid amount" }, { status: 400 });
     }
 
-    const card = await prisma.virtualCard.findUnique({
+    let card = await prisma.virtualCard.findUnique({
       where: { id },
       include: { fiatWallet: true },
     });
     if (!card || card.userId !== session.id) {
       return NextResponse.json({ error: "Card not found" }, { status: 404 });
     }
+    // Auto-unfreeze if the freeze timer has expired
+    if (card.status === "FROZEN" && card.freezeUntil && new Date() >= card.freezeUntil) {
+      await prisma.virtualCard.update({ where: { id }, data: { status: "ACTIVE", freezeUntil: null } });
+      card = { ...card, status: "ACTIVE", freezeUntil: null };
+    }
     if (card.status === "FROZEN") {
-      return NextResponse.json({ error: "Card is frozen — unfreeze it before paying" }, { status: 400 });
+      const until = card.freezeUntil ? ` until ${new Date(card.freezeUntil).toLocaleString()}` : "";
+      return NextResponse.json({ error: `Card is frozen${until} — unfreeze it before paying` }, { status: 400 });
     }
     if (card.status !== "ACTIVE") {
       return NextResponse.json({ error: "Card is not active" }, { status: 400 });
@@ -50,7 +56,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         });
         const updated = await tx.virtualCard.update({
           where: { id },
-          data: { spentAmount: { increment: amount } },
+          data: {
+            spentAmount: { increment: amount },
+            ...(card.oneTimeUse ? { status: "TERMINATED" } : {}),
+          },
         });
         await tx.fiatTransaction.create({
           data: {
@@ -85,6 +94,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         data: {
           balance: { decrement: amount },
           spentAmount: { increment: amount },
+          ...(card.oneTimeUse ? { status: "TERMINATED" } : {}),
         },
       });
       await tx.transaction.create({
