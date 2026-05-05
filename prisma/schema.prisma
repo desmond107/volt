@@ -51,6 +51,7 @@ model VirtualCard {
   id            String   @id @default(cuid())
   userId        String
   walletId      String?
+  fiatWalletId  String?
   cardNumber    String   @unique
   cvv           String
   expiryMonth   Int
@@ -70,6 +71,7 @@ model VirtualCard {
 
   user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   wallet       Wallet?     @relation(fields: [walletId], references: [id])
+  fiatWallet   FiatWallet? @relation(fields: [fiatWalletId], references: [id])
   transactions Transaction[]
 }
 
@@ -160,6 +162,7 @@ model FiatWallet {
 
   user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   transactions FiatTransaction[]
+  cards        VirtualCard[]
 }
 
 model FiatTransaction {

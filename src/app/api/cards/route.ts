@@ -10,7 +10,10 @@ export async function GET() {
   const cards = await prisma.virtualCard.findMany({
     where: { userId: session.id, status: { not: "TERMINATED" } },
     orderBy: { createdAt: "desc" },
-    include: { wallet: { select: { id: true, asset: true, network: true, balance: true } } },
+    include: {
+      wallet: { select: { id: true, asset: true, network: true, balance: true } },
+      fiatWallet: { select: { id: true, currency: true, name: true, balance: true } },
+    },
   });
 
   return NextResponse.json({ cards: serializeDecimals(cards) });
@@ -25,7 +28,17 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const { label, spendLimit, color, currency, brand } = await req.json();
+    const { label, spendLimit, color, currency, brand, fiatWalletId } = await req.json();
+
+    let resolvedCurrency = currency || "USD";
+
+    if (fiatWalletId) {
+      const fiatWallet = await prisma.fiatWallet.findUnique({ where: { id: fiatWalletId } });
+      if (!fiatWallet || fiatWallet.userId !== session.id) {
+        return NextResponse.json({ error: "Fiat wallet not found" }, { status: 404 });
+      }
+      resolvedCurrency = fiatWallet.currency;
+    }
 
     const now = new Date();
     const expiryYear = now.getFullYear() + 3;
@@ -42,8 +55,9 @@ export async function POST(req: NextRequest) {
         label: label || "Virtual Card",
         spendLimit: spendLimit || 1000,
         color: color || "#6366f1",
-        currency: currency || "USD",
+        currency: resolvedCurrency,
         brand: brand === "MASTERCARD" ? "MASTERCARD" : "VISA",
+        ...(fiatWalletId ? { fiatWalletId } : {}),
       },
     });
 

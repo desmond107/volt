@@ -5,9 +5,10 @@ import Button from "@/components/ui/Button";
 import {
   Plus, X, CheckCircle2, Search, ArrowLeftRight, Send,
   TrendingUp, Download, RefreshCw, ChevronDown, User,
-  CreditCard, Smartphone,
+  CreditCard, Smartphone, Trash2, AlertTriangle,
 } from "lucide-react";
 import { CURRENCY_NAMES, CURRENCY_SYMBOLS, FALLBACK_RATES } from "@/lib/rates";
+import VirtualCardFace, { getTheme } from "@/components/ui/VirtualCardFace";
 
 interface FiatWallet {
   id: string;
@@ -19,6 +20,23 @@ interface FiatWallet {
 const PALETTE = [
   "#2775ca", "#26a17b", "#f59e0b", "#6366f1", "#ef4444",
   "#10b981", "#8b5cf6", "#f97316", "#ec4899", "#14b8a6",
+];
+
+const CARD_COLORS = [
+  { label: "Navy",     value: "#6366f1" },
+  { label: "Cyan",     value: "#06b6d4" },
+  { label: "Emerald",  value: "#10b981" },
+  { label: "Rose",     value: "#f43f5e" },
+  { label: "Violet",   value: "#8b5cf6" },
+  { label: "Gold",     value: "#f59e0b" },
+  { label: "Crimson",  value: "#ef4444" },
+  { label: "Ocean",    value: "#1d4ed8" },
+  { label: "Midnight", value: "#334155" },
+  { label: "Teal",     value: "#0d9488" },
+  { label: "Orange",   value: "#ea580c" },
+  { label: "Fuchsia",  value: "#d946ef" },
+  { label: "Lime",     value: "#84cc16" },
+  { label: "Arctic",   value: "#0ea5e9" },
 ];
 
 function walletColor(currency: string) {
@@ -43,7 +61,7 @@ const ALL_CURRENCIES = Object.keys(FALLBACK_RATES).map((code) => ({
   name: CURRENCY_NAMES[code] ?? code,
 }));
 
-type Modal = "add" | "deposit" | "transfer" | "send" | "convert" | null;
+type Modal = "add" | "deposit" | "transfer" | "send" | "convert" | "delete" | "mpesa" | "card-create" | null;
 
 export default function MultiWalletPage() {
   const [wallets, setWallets] = useState<FiatWallet[]>([]);
@@ -89,6 +107,15 @@ export default function MultiWalletPage() {
   const [convCurrency, setConvCurrency] = useState("");
   const [convAmt, setConvAmt] = useState("");
 
+  // send to M-Pesa
+  const [mpesaSendPhone, setMpesaSendPhone] = useState("");
+  const [mpesaSendAmt, setMpesaSendAmt] = useState("");
+
+  // card create
+  const [cardCreateLabel, setCardCreateLabel] = useState("");
+  const [cardCreateBrand, setCardCreateBrand] = useState<"VISA" | "MASTERCARD">("VISA");
+  const [cardCreateColor, setCardCreateColor] = useState("#6366f1");
+
   const fetchWallets = useCallback(async () => {
     const res = await fetch("/api/fiat-wallets");
     if (res.ok) {
@@ -125,6 +152,8 @@ export default function MultiWalletPage() {
     setToWalletId(""); setTransferAmt("");
     setSendEmail(""); setSendLookup(null); setSendAmt(""); setLookupErr("");
     setConvSearch(""); setConvCurrency(""); setConvAmt("");
+    setMpesaSendPhone(""); setMpesaSendAmt("");
+    setCardCreateLabel(""); setCardCreateBrand("VISA"); setCardCreateColor("#6366f1");
   };
   const closeModal = () => { setModal(null); setActive(null); };
 
@@ -253,6 +282,47 @@ export default function MultiWalletPage() {
     setBusy(false);
   };
 
+  // ── Send to M-Pesa ───────────────────────────────────────────────────────
+  const mpesaKesPreview = active && mpesaSendAmt && parseFloat(mpesaSendAmt) > 0
+    ? ((parseFloat(mpesaSendAmt) / (rates[active.currency] ?? 1)) * (rates["KES"] ?? 129.5))
+    : null;
+
+  const handleMpesaSend = async () => {
+    if (!active || !mpesaSendAmt || !mpesaSendPhone) return;
+    setBusy(true); setErr("");
+    const res = await fetch("/api/fiat-wallets/mpesa", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        walletId: active.id,
+        phone: mpesaSendPhone,
+        amount: parseFloat(mpesaSendAmt),
+      }),
+    });
+    const d = await res.json();
+    if (res.ok) {
+      await fetchWallets();
+      setSuccessMsg(
+        `KES ${d.kesAmount.toLocaleString(undefined, { maximumFractionDigits: 0 })} sent to M-Pesa ${d.phone}`
+      );
+      setSuccess(true);
+    } else setErr(d.error ?? "Failed");
+    setBusy(false);
+  };
+
+  // ── Delete ────────────────────────────────────────────────────────────────
+  const handleDelete = async () => {
+    if (!active) return;
+    setBusy(true); setErr("");
+    const res = await fetch(`/api/fiat-wallets/${active.id}`, { method: "DELETE" });
+    if (res.ok) {
+      await fetchWallets();
+      setSuccessMsg(`${active.currency} wallet deleted`);
+      setSuccess(true);
+    } else { const d = await res.json(); setErr(d.error ?? "Failed"); }
+    setBusy(false);
+  };
+
   // ── Convert ───────────────────────────────────────────────────────────────
   const filteredConv = ALL_CURRENCIES.filter((c) => {
     const q = convSearch.toLowerCase();
@@ -277,6 +347,28 @@ export default function MultiWalletPage() {
       setSuccessMsg(`Converted ${fmt(parseFloat(convAmt), active.currency)} → ${fmt(d.received, d.targetCurrency)}`);
       setSuccess(true);
     } else setErr(d.error ?? "Failed");
+    setBusy(false);
+  };
+
+  // ── Create Card ───────────────────────────────────────────────────────────
+  const handleCardCreate = async () => {
+    if (!active) return;
+    setBusy(true); setErr("");
+    const res = await fetch("/api/cards", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        fiatWalletId: active.id,
+        label: cardCreateLabel || `${active.currency} Card`,
+        brand: cardCreateBrand,
+        color: cardCreateColor,
+      }),
+    });
+    const d = await res.json();
+    if (res.ok) {
+      setSuccessMsg(`${cardCreateBrand} card linked to your ${active.currency} wallet`);
+      setSuccess(true);
+    } else setErr(d.error ?? "Failed to create card");
     setBusy(false);
   };
 
@@ -344,12 +436,16 @@ export default function MultiWalletPage() {
                         <div className="text-xs text-[#6b88b0]">{wallet.name ?? CURRENCY_NAMES[wallet.currency] ?? wallet.currency}</div>
                       </div>
                     </div>
-                    <button
-                      onClick={fetchWallets}
-                      className="p-1.5 text-[#6b88b0] hover:text-white rounded-lg hover:bg-[#0d2040] transition-colors"
-                    >
-                      <RefreshCw className="w-3.5 h-3.5" />
-                    </button>
+                    <div className="flex items-center gap-1">
+                      <button onClick={fetchWallets}
+                        className="p-1.5 text-[#6b88b0] hover:text-white rounded-lg hover:bg-[#0d2040] transition-colors">
+                        <RefreshCw className="w-3.5 h-3.5" />
+                      </button>
+                      <button onClick={() => openModal("delete", wallet)}
+                        className="p-1.5 text-[#6b88b0] hover:text-red-400 rounded-lg hover:bg-red-500/10 transition-colors">
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
 
                   {/* Balance */}
@@ -382,6 +478,20 @@ export default function MultiWalletPage() {
                       Convert
                     </Button>
                   </div>
+                  <button
+                    onClick={() => openModal("mpesa", wallet)}
+                    className="w-full flex items-center justify-center gap-2 py-2 rounded-xl border border-emerald-600/30 bg-emerald-500/5 text-emerald-400 text-xs font-semibold hover:bg-emerald-500/10 hover:border-emerald-600/50 transition-colors"
+                  >
+                    <Smartphone className="w-3.5 h-3.5" />
+                    Send to M-Pesa
+                  </button>
+                  <button
+                    onClick={() => openModal("card-create", wallet)}
+                    className="w-full flex items-center justify-center gap-2 py-2 rounded-xl border border-blue-600/30 bg-blue-500/5 text-blue-400 text-xs font-semibold hover:bg-blue-500/10 hover:border-blue-600/50 transition-colors"
+                  >
+                    <CreditCard className="w-3.5 h-3.5" />
+                    Create Virtual Card
+                  </button>
                 </div>
               );
             })}
@@ -718,7 +828,7 @@ export default function MultiWalletPage() {
                           onChange={(e) => setTransferAmt(e.target.value)}
                           className="pr-14"
                         />
-                        <button onClick={() => setTransferAmt(active.balance.toFixed(2))}
+                        <button onClick={() => setTransferAmt(String(Math.floor(active.balance * 100) / 100))}
                           className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-blue-400 hover:text-blue-300 font-medium">
                           Max
                         </button>
@@ -797,7 +907,7 @@ export default function MultiWalletPage() {
                             onChange={(e) => setSendAmt(e.target.value)}
                             className="pr-14"
                           />
-                          <button onClick={() => setSendAmt(active.balance.toFixed(2))}
+                          <button onClick={() => setSendAmt(String(Math.floor(active.balance * 100) / 100))}
                             className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-blue-400 hover:text-blue-300 font-medium">
                             Max
                           </button>
@@ -843,7 +953,7 @@ export default function MultiWalletPage() {
                           onChange={(e) => setConvAmt(e.target.value)}
                           className="pr-14"
                         />
-                        <button onClick={() => setConvAmt(active.balance.toFixed(2))}
+                        <button onClick={() => setConvAmt(String(Math.floor(active.balance * 100) / 100))}
                           className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-blue-400 hover:text-blue-300 font-medium">
                           Max
                         </button>
@@ -920,6 +1030,282 @@ export default function MultiWalletPage() {
                       >
                         <TrendingUp className="w-4 h-4" />
                         Convert
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+            {/* ── Send to M-Pesa ─────────────────────────────────────────────── */}
+            {modal === "mpesa" && active && (
+              <>
+                <ModalHeader title="Send to M-Pesa" subtitle={`Withdraw from ${active.currency} wallet`} onClose={closeModal} />
+                {success ? (
+                  <SuccessView msg={successMsg} onDone={closeModal} />
+                ) : (
+                  <div className="p-6 space-y-5">
+                    <WalletBadge wallet={active} rates={rates} label="From" />
+
+                    {/* Info banner */}
+                    <div className="flex gap-3 bg-emerald-500/5 border border-emerald-500/20 rounded-xl p-4">
+                      <Smartphone className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-sm font-medium text-emerald-300">M-Pesa STK Push</p>
+                        <p className="text-xs text-[#6b88b0] mt-0.5">
+                          Funds will be converted to KES and sent directly to the Safaricom M-Pesa number below.
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Phone */}
+                    <div>
+                      <label className="block text-sm font-medium text-[#c0d4ef] mb-1.5">M-Pesa Phone Number</label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#6b88b0] text-sm font-mono">+254</span>
+                        <input
+                          type="tel" inputMode="numeric" placeholder="7XX XXX XXX"
+                          value={mpesaSendPhone}
+                          onChange={(e) => setMpesaSendPhone(e.target.value.replace(/\D/g, "").slice(0, 9))}
+                          className="pl-14 font-mono tracking-wider"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Amount */}
+                    <div>
+                      <label className="block text-sm font-medium text-[#c0d4ef] mb-1.5">Amount ({active.currency})</label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#6b88b0] text-sm">
+                          {CURRENCY_SYMBOLS[active.currency] ?? active.currency}
+                        </span>
+                        <input
+                          type="number" min="0.01" step="0.01" placeholder="0.00"
+                          max={active.balance}
+                          value={mpesaSendAmt}
+                          onChange={(e) => setMpesaSendAmt(e.target.value)}
+                          className="pl-10 pr-14"
+                        />
+                        <button
+                          onClick={() => setMpesaSendAmt(String(Math.floor(active.balance * 100) / 100))}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-blue-400 hover:text-blue-300 font-medium"
+                        >
+                          Max
+                        </button>
+                      </div>
+                      {mpesaSendAmt && parseFloat(mpesaSendAmt) > active.balance && (
+                        <p className="text-xs text-red-400 mt-1">Exceeds available balance</p>
+                      )}
+                    </div>
+
+                    {/* KES breakdown */}
+                    {mpesaKesPreview !== null && (
+                      <div className="bg-[#020c1b] border border-[#0d2040] rounded-xl p-4 space-y-2">
+                        <div className="flex justify-between text-xs">
+                          <span className="text-[#6b88b0]">You send</span>
+                          <span className="text-white font-medium">{fmt(parseFloat(mpesaSendAmt), active.currency)}</span>
+                        </div>
+                        {active.currency !== "KES" && (
+                          <div className="flex justify-between text-xs">
+                            <span className="text-[#6b88b0]">Rate</span>
+                            <span className="text-[#6b88b0]">
+                              1 {active.currency} ={" "}
+                              {((rates["KES"] ?? 129.5) / (rates[active.currency] ?? 1)).toLocaleString(undefined, { maximumFractionDigits: 4 })} KES
+                            </span>
+                          </div>
+                        )}
+                        <div className="border-t border-[#0d2040] pt-2 flex justify-between text-sm">
+                          <span className="text-[#c0d4ef] font-medium">Recipient receives</span>
+                          <span className="text-emerald-400 font-bold">
+                            KES {mpesaKesPreview.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+
+                    {err && <p className="text-xs text-red-400">{err}</p>}
+                    <div className="flex gap-3">
+                      <Button variant="secondary" className="flex-1" onClick={closeModal}>Cancel</Button>
+                      <button
+                        onClick={handleMpesaSend}
+                        disabled={
+                          busy ||
+                          !mpesaSendPhone || mpesaSendPhone.replace(/\D/g, "").length < 9 ||
+                          !mpesaSendAmt || parseFloat(mpesaSendAmt) <= 0 ||
+                          parseFloat(mpesaSendAmt) > active.balance
+                        }
+                        className="flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-sm font-semibold hover:bg-emerald-500/20 hover:border-emerald-500/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {busy ? (
+                          <span className="w-4 h-4 border-2 border-emerald-400/30 border-t-emerald-400 rounded-full animate-spin" />
+                        ) : (
+                          <Smartphone className="w-4 h-4" />
+                        )}
+                        {busy ? "Sending…" : "Send via M-Pesa"}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* ── Delete ─────────────────────────────────────────────────────── */}
+            {modal === "delete" && active && (
+              <>
+                <ModalHeader title={`Delete ${active.currency} Wallet`} onClose={closeModal} />
+                {success ? (
+                  <SuccessView msg={successMsg} onDone={closeModal} />
+                ) : (
+                  <div className="p-6 space-y-5">
+                    <WalletBadge wallet={active} rates={rates} />
+
+                    {active.balance >= 0.01 ? (
+                      <>
+                        <div className="flex gap-3 bg-amber-500/5 border border-amber-500/20 rounded-xl p-4">
+                          <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+                          <div>
+                            <p className="text-sm font-medium text-amber-300">Wallet must be empty before deleting</p>
+                            <p className="text-xs text-[#6b88b0] mt-1">
+                              This wallet still holds{" "}
+                              <span className="text-white font-medium">{fmt(active.balance, active.currency)}</span>.
+                              {" "}Move all funds first using one of the options below.
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="space-y-2">
+                          <p className="text-xs font-medium text-[#6b88b0] uppercase tracking-wider">Empty your wallet by</p>
+                          {[
+                            { label: "Transfer to another wallet", action: () => { closeModal(); openModal("transfer", active); } },
+                            { label: "Send to a Volt user", action: () => { closeModal(); openModal("send", active); } },
+                            { label: "Convert to another currency", action: () => { closeModal(); openModal("convert", active); } },
+                            { label: "Send to M-Pesa", action: () => { closeModal(); openModal("mpesa", active); } },
+                          ].map(({ label, action }) => (
+                            <button key={label} onClick={action}
+                              className="w-full flex items-center justify-between px-4 py-3 rounded-xl border border-[#0d2040] text-sm text-[#6b88b0] hover:border-blue-600/30 hover:text-white hover:bg-blue-600/5 transition-all text-left">
+                              <span>{label}</span>
+                              <ChevronDown className="w-4 h-4 -rotate-90 shrink-0" />
+                            </button>
+                          ))}
+                        </div>
+
+                        <div className="flex gap-3">
+                          <Button className="flex-1" onClick={closeModal}>Got it</Button>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <p className="text-sm text-[#6b88b0]">
+                          Your <span className="text-white font-medium">{active.currency}</span> wallet
+                          is empty. Deleting it will also remove its transaction history. This cannot be undone.
+                        </p>
+
+                        {err && <p className="text-xs text-red-400">{err}</p>}
+                        <div className="flex gap-3">
+                          <Button variant="secondary" className="flex-1" onClick={closeModal}>Cancel</Button>
+                          <button
+                            onClick={handleDelete}
+                            disabled={busy}
+                            className="flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-sm font-semibold hover:bg-red-500/20 hover:border-red-500/50 transition-colors disabled:opacity-50"
+                          >
+                            {busy ? (
+                              <span className="w-4 h-4 border-2 border-red-400/30 border-t-red-400 rounded-full animate-spin" />
+                            ) : (
+                              <Trash2 className="w-4 h-4" />
+                            )}
+                            {busy ? "Deleting…" : "Delete Wallet"}
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
+              </>
+            )}
+            {/* ── Create Virtual Card ──────────────────────────────────────── */}
+            {modal === "card-create" && active && (
+              <>
+                <ModalHeader title="Create Virtual Card" subtitle={`Linked to your ${active.currency} wallet`} onClose={closeModal} />
+                {success ? (
+                  <SuccessView msg={successMsg} onDone={closeModal} />
+                ) : (
+                  <div className="p-6 space-y-5">
+                    {/* Live card preview */}
+                    <VirtualCardFace
+                      color={cardCreateColor}
+                      label={cardCreateLabel || `${active.currency} Card`}
+                      cardHolder="CARD HOLDER"
+                      cardNumber="0000000000000000"
+                      expiryMonth={new Date().getMonth() + 1}
+                      expiryYear={new Date().getFullYear() + 3}
+                      status="ACTIVE"
+                      brand={cardCreateBrand}
+                      nfcEnabled
+                    />
+
+                    <div>
+                      <label className="block text-sm font-medium text-[#c0d4ef] mb-1.5">Card Label</label>
+                      <input
+                        type="text"
+                        placeholder={`${active.currency} Card`}
+                        value={cardCreateLabel}
+                        onChange={(e) => setCardCreateLabel(e.target.value)}
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-[#c0d4ef] mb-2">Card Theme</label>
+                      <div className="flex flex-wrap gap-2">
+                        {CARD_COLORS.map(({ value, label }) => {
+                          const theme = getTheme(value);
+                          return (
+                            <button
+                              key={value}
+                              onClick={() => setCardCreateColor(value)}
+                              title={label}
+                              className="w-8 h-8 rounded-full transition-transform hover:scale-110 shrink-0"
+                              style={{
+                                background: theme.gradient,
+                                outline: cardCreateColor === value ? `2px solid ${theme.accent}` : "none",
+                                outlineOffset: "2px",
+                              }}
+                            />
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-[#c0d4ef] mb-2">Network</label>
+                      <div className="grid grid-cols-2 gap-2">
+                        {(["VISA", "MASTERCARD"] as const).map((brand) => (
+                          <button key={brand} onClick={() => setCardCreateBrand(brand)}
+                            className={`flex items-center justify-center gap-2 py-2.5 rounded-xl border text-xs font-medium transition-all ${
+                              cardCreateBrand === brand
+                                ? "border-blue-500/50 bg-blue-500/10 text-white"
+                                : "border-[#0d2040] text-[#6b88b0] hover:border-blue-500/30"
+                            }`}>
+                            {brand === "VISA" ? (
+                              <span className="italic font-light tracking-widest">VISA</span>
+                            ) : (
+                              <>
+                                <div className="flex items-center">
+                                  <div className="w-3.5 h-3.5 rounded-full bg-red-500/80" />
+                                  <div className="w-3.5 h-3.5 rounded-full bg-yellow-400/80 -ml-2" />
+                                </div>
+                                <span>Mastercard</span>
+                              </>
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {err && <p className="text-xs text-red-400">{err}</p>}
+                    <div className="flex gap-3">
+                      <Button variant="secondary" className="flex-1" onClick={closeModal}>Cancel</Button>
+                      <Button className="flex-1" loading={busy} onClick={handleCardCreate}>
+                        <CreditCard className="w-4 h-4" />
+                        Create Card
                       </Button>
                     </div>
                   </div>

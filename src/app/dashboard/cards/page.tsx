@@ -15,6 +15,13 @@ interface LinkedWallet {
   balance: number;
 }
 
+interface LinkedFiatWallet {
+  id: string;
+  currency: string;
+  name: string | null;
+  balance: number;
+}
+
 interface VirtualCard {
   id: string;
   cardNumber: string;
@@ -33,6 +40,8 @@ interface VirtualCard {
   color: string;
   walletId: string | null;
   wallet: LinkedWallet | null;
+  fiatWalletId: string | null;
+  fiatWallet: LinkedFiatWallet | null;
 }
 
 interface Wallet {
@@ -720,7 +729,16 @@ export default function CardsPage() {
                   </div>
 
                   {/* Linked wallet badge */}
-                  {card.wallet ? (
+                  {card.fiatWallet ? (
+                    <div className="flex items-center justify-between bg-blue-500/5 border border-blue-500/20 rounded-lg px-3 py-2">
+                      <div className="flex items-center gap-1.5">
+                        <Link2 className="w-3 h-3 text-blue-400" />
+                        <span className="text-xs text-blue-300 font-medium">{card.fiatWallet.currency}</span>
+                        <span className="text-xs text-[#6b88b0]">· {card.fiatWallet.name ?? "Multi-Currency Wallet"}</span>
+                      </div>
+                      <span className="text-xs text-[#6b88b0]">{card.fiatWallet.balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {card.fiatWallet.currency}</span>
+                    </div>
+                  ) : card.wallet ? (
                     <div className="flex items-center justify-between bg-emerald-500/5 border border-emerald-500/20 rounded-lg px-3 py-2">
                       <div className="flex items-center gap-1.5">
                         <Link2 className="w-3 h-3 text-emerald-400" />
