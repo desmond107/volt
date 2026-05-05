@@ -318,7 +318,9 @@ function PayModal({ card, onClose, onSuccess }: {
               <div className="bg-[#020c1b] rounded-lg px-3 py-2 space-y-1">
                 <div className="flex justify-between text-xs">
                   <span className="text-[#6b88b0]">Spend limit remaining</span>
-                  <span className="text-white">{formatCurrency(card.spendLimit - card.spentAmount)}</span>
+                  <span className="text-white">
+                    {card.spendLimit === 0 ? "Unlimited" : formatCurrency(card.spendLimit - card.spentAmount)}
+                  </span>
                 </div>
                 <div className="flex justify-between text-xs">
                   <span className="text-[#6b88b0]">{card.fiatWallet ? "Wallet balance" : "Card balance"}</span>
@@ -606,6 +608,7 @@ export default function CardsPage() {
     if (!limitModal) return;
     const val = parseFloat(newLimit);
     if (isNaN(val) || val < 0) { setLimitError("Enter a valid limit"); return; }
+    // val === 0 is valid — it means no limit
     setLimitError("");
     setLimitLoading(true);
     await fetch(`/api/cards/${limitModal.id}`, {
@@ -648,7 +651,8 @@ export default function CardsPage() {
   const renderCard = (card: VirtualCard) => {
     const revealed = revealedCard === card.id;
     const frozen = card.status === "FROZEN";
-    const usedPercent = card.spendLimit > 0 ? (card.spentAmount / card.spendLimit) * 100 : 0;
+    const isUnlimited = card.spendLimit === 0;
+    const usedPercent = !isUnlimited && card.spendLimit > 0 ? (card.spentAmount / card.spendLimit) * 100 : 0;
     const style = getTheme(card.color);
     const hasLinkedWallet = !!(card.wallet || card.fiatWallet);
 
@@ -656,7 +660,7 @@ export default function CardsPage() {
       <div key={card.id} className="space-y-3">
         <div className="flex items-center justify-between px-1">
           <span className="text-sm font-medium text-white">{card.label}</span>
-          <span className="text-xs text-[#6b88b0]">{formatCurrency(card.spendLimit)} limit</span>
+          <span className="text-xs text-[#6b88b0]">{card.spendLimit === 0 ? "No Limit" : `${formatCurrency(card.spendLimit)} limit`}</span>
         </div>
 
         <div
@@ -700,14 +704,18 @@ export default function CardsPage() {
           </div>
           <div className="flex justify-between text-xs mb-2">
             <span className="text-[#6b88b0]">Spent</span>
-            <span className="text-white">{formatCurrency(card.spentAmount)} / {formatCurrency(card.spendLimit)}</span>
+            <span className="text-white">
+              {formatCurrency(card.spentAmount)}{isUnlimited ? "" : ` / ${formatCurrency(card.spendLimit)}`}
+            </span>
           </div>
-          <div className="h-1.5 bg-[#0d2040] rounded-full overflow-hidden">
-            <div
-              className="h-full rounded-full transition-all"
-              style={{ width: `${Math.min(usedPercent, 100)}%`, backgroundColor: style.accent }}
-            />
-          </div>
+          {!isUnlimited && (
+            <div className="h-1.5 bg-[#0d2040] rounded-full overflow-hidden">
+              <div
+                className="h-full rounded-full transition-all"
+                style={{ width: `${Math.min(usedPercent, 100)}%`, backgroundColor: style.accent }}
+              />
+            </div>
+          )}
         </div>
 
         {/* Linked wallet badge */}
@@ -802,7 +810,7 @@ export default function CardsPage() {
             {frozen ? "Unfreeze" : "Freeze"}
           </button>
           <button
-            onClick={() => { setLimitModal(card); setNewLimit(String(card.spendLimit)); setLimitError(""); }}
+            onClick={() => { setLimitModal(card); setNewLimit(card.spendLimit === 0 ? "0" : String(card.spendLimit)); setLimitError(""); }}
             title="Edit spend limit"
             className="flex flex-col items-center justify-center gap-1 py-2.5 text-xs font-medium text-slate-300 hover:text-white bg-[#061120] border border-slate-500/20 rounded-lg hover:border-slate-500/50 transition-colors"
           >
@@ -1286,38 +1294,66 @@ export default function CardsPage() {
             <div className="p-5 space-y-4">
               <div className="flex items-center justify-between text-xs text-[#6b88b0] bg-[#020c1b] border border-[#0d2040] rounded-lg px-3 py-2">
                 <span>Currently spent</span>
-                <span className="text-white font-medium">{formatCurrency(limitModal.spentAmount)} / {formatCurrency(limitModal.spendLimit)}</span>
+                <span className="text-white font-medium">
+                  {formatCurrency(limitModal.spentAmount)}{limitModal.spendLimit === 0 ? " · No limit set" : ` / ${formatCurrency(limitModal.spendLimit)}`}
+                </span>
               </div>
-              <div>
-                <label className="block text-xs font-medium text-[#c0d4ef] mb-1.5">New Spend Limit (USD)</label>
-                <input
-                  type="number"
-                  min={0}
-                  step="10"
-                  placeholder="e.g. 1000"
-                  value={newLimit}
-                  onChange={(e) => { setNewLimit(e.target.value); setLimitError(""); }}
-                  onKeyDown={(e) => e.key === "Enter" && handleUpdateLimit()}
-                  autoFocus
-                />
-              </div>
-              <div className="flex gap-2">
-                {[100, 250, 500, 1000, 2500].map((v) => (
-                  <button
-                    key={v}
-                    onClick={() => setNewLimit(String(v))}
-                    className="flex-1 py-1 text-xs text-[#6b88b0] hover:text-white border border-[#0d2040] hover:border-blue-500/40 rounded-lg transition-colors"
-                  >
-                    ${v}
-                  </button>
-                ))}
-              </div>
+
+              {/* No limit toggle */}
+              <button
+                onClick={() => {
+                  setLimitError("");
+                  setNewLimit(newLimit === "0" ? "" : "0");
+                }}
+                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl border text-xs font-medium transition-all ${
+                  newLimit === "0"
+                    ? "border-emerald-500/50 bg-emerald-500/10 text-emerald-300"
+                    : "border-[#0d2040] text-[#6b88b0] hover:border-emerald-500/30 hover:text-emerald-400"
+                }`}
+              >
+                <span>No Limit (Unlimited spending)</span>
+                <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors ${
+                  newLimit === "0" ? "border-emerald-400 bg-emerald-400" : "border-[#3a5a80]"
+                }`}>
+                  {newLimit === "0" && <div className="w-1.5 h-1.5 rounded-full bg-[#061120]" />}
+                </div>
+              </button>
+
+              {newLimit !== "0" && (
+                <>
+                  <div>
+                    <label className="block text-xs font-medium text-[#c0d4ef] mb-1.5">New Spend Limit (USD)</label>
+                    <input
+                      type="number"
+                      min={1}
+                      step="10"
+                      placeholder="e.g. 1000"
+                      value={newLimit}
+                      onChange={(e) => { setNewLimit(e.target.value); setLimitError(""); }}
+                      onKeyDown={(e) => e.key === "Enter" && handleUpdateLimit()}
+                      autoFocus
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    {[100, 250, 500, 1000, 2500].map((v) => (
+                      <button
+                        key={v}
+                        onClick={() => setNewLimit(String(v))}
+                        className="flex-1 py-1 text-xs text-[#6b88b0] hover:text-white border border-[#0d2040] hover:border-blue-500/40 rounded-lg transition-colors"
+                      >
+                        ${v}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+
               {limitError && <p className="text-xs text-red-400">{limitError}</p>}
               <div className="flex gap-3 pt-1">
                 <Button variant="secondary" className="flex-1" onClick={() => setLimitModal(null)}>Cancel</Button>
-                <Button className="flex-1" loading={limitLoading} onClick={handleUpdateLimit} disabled={!newLimit}>
+                <Button className="flex-1" loading={limitLoading} onClick={handleUpdateLimit} disabled={!newLimit && newLimit !== "0"}>
                   <SlidersHorizontal className="w-4 h-4" />
-                  Update Limit
+                  {newLimit === "0" ? "Remove Limit" : "Update Limit"}
                 </Button>
               </div>
             </div>

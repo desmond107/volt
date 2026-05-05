@@ -30,7 +30,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
     const spentAmount = card.spentAmount.toNumber();
     const spendLimit = card.spendLimit.toNumber();
-    if (spentAmount + amount > spendLimit) {
+    // spendLimit === 0 means unlimited
+    if (spendLimit > 0 && spentAmount + amount > spendLimit) {
       const remaining = spendLimit - spentAmount;
       return NextResponse.json({ error: `Exceeds spend limit (remaining: $${remaining.toFixed(2)})` }, { status: 400 });
     }
