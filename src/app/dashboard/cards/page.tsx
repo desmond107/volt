@@ -1043,10 +1043,17 @@ export default function CardsPage() {
       {/* Issue card modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-[#061120] border border-[#0d2040] rounded-2xl p-6 w-full max-w-md">
-            <h2 className="text-lg font-semibold text-white mb-5">Issue New Digital Currency Card</h2>
+          <div className="bg-[#061120] border border-[#0d2040] rounded-2xl w-full max-w-md flex flex-col max-h-[92vh]">
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-[#0d2040] shrink-0">
+              <h2 className="text-lg font-semibold text-white">Issue New Digital Currency Card</h2>
+              <button onClick={() => setShowModal(false)} className="p-1.5 text-[#6b88b0] hover:text-white rounded-lg hover:bg-[#0d2040] transition-colors">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
 
-            <div className="space-y-4">
+            {/* Scrollable body */}
+            <div className="overflow-y-auto flex-1 px-6 py-5 space-y-4">
               <div>
                 <label className="block text-sm font-medium text-[#c0d4ef] mb-1.5">Card Label</label>
                 <input
@@ -1154,7 +1161,8 @@ export default function CardsPage() {
               </div>
             </div>
 
-            <div className="flex gap-3 mt-6">
+            {/* Footer */}
+            <div className="flex gap-3 px-6 py-4 border-t border-[#0d2040] shrink-0">
               <Button variant="secondary" className="flex-1" onClick={() => setShowModal(false)}>
                 Cancel
               </Button>
