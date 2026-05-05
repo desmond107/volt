@@ -1,12 +1,20 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import TopBar from "@/components/dashboard/TopBar";
 import EagleLogo from "@/components/ui/EagleLogo";
 import Button from "@/components/ui/Button";
-import { ArrowLeft, CheckCircle2, Clock, Package, Truck, MapPin, AlertCircle, ChevronRight, CreditCard, X, Trash2 } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Clock, Package, Truck, MapPin, AlertCircle, ChevronRight, CreditCard, X, Trash2, Globe, ChevronDown } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import VirtualCardFace from "@/components/ui/VirtualCardFace";
+
+interface LinkedFiatWallet {
+  id: string;
+  currency: string;
+  name: string | null;
+  balance: number;
+}
 
 interface PhysicalCardRequest {
   id: string;
@@ -20,6 +28,8 @@ interface PhysicalCardRequest {
   postalCode: string;
   country: string;
   cardColor: string;
+  fiatWalletId: string | null;
+  fiatWallet: LinkedFiatWallet | null;
   trackingNumber: string | null;
   notes: string | null;
   createdAt: string;
@@ -113,11 +123,15 @@ interface VirtualCardModal {
 function CreateVirtualCardModal({
   physicalColor,
   holderName,
+  fiatWalletId,
+  fiatWallet,
   onClose,
   onCreated,
 }: {
   physicalColor: string;
   holderName: string;
+  fiatWalletId: string | null;
+  fiatWallet: LinkedFiatWallet | null;
   onClose: () => void;
   onCreated: () => void;
 }) {
@@ -146,7 +160,13 @@ function CreateVirtualCardModal({
       const res = await fetch("/api/cards", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ label: modal.label.trim(), spendLimit: limit, color: colorHex, brand: "VISA" }),
+        body: JSON.stringify({
+          label: modal.label.trim(),
+          spendLimit: limit,
+          color: colorHex,
+          brand: "VISA",
+          ...(fiatWalletId ? { fiatWalletId } : {}),
+        }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -188,6 +208,20 @@ function CreateVirtualCardModal({
             />
           </div>
 
+          {fiatWallet && (
+            <div className="flex items-center gap-2.5 bg-blue-500/5 border border-blue-500/20 rounded-xl px-3 py-2.5">
+              <div className="w-7 h-7 rounded-full bg-blue-500/10 border border-blue-500/20 flex items-center justify-center shrink-0">
+                <Globe className="w-3.5 h-3.5 text-blue-400" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-xs font-medium text-white">Linked to {fiatWallet.currency} wallet</div>
+                <div className="text-[10px] text-[#6b88b0]">
+                  {fiatWallet.name ?? "Multi-Currency Wallet"} · {fiatWallet.balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {fiatWallet.currency} available
+                </div>
+              </div>
+            </div>
+          )}
+
           <div>
             <label className="block text-xs font-medium text-[#8aa0b8] mb-1.5">Card Label</label>
             <input
@@ -199,16 +233,18 @@ function CreateVirtualCardModal({
             />
           </div>
 
-          <div>
-            <label className="block text-xs font-medium text-[#8aa0b8] mb-1.5">Spend Limit (USD)</label>
-            <input
-              type="number"
-              min={10}
-              max={10000}
-              value={modal.spendLimit}
-              onChange={(e) => setModal((m) => ({ ...m, spendLimit: e.target.value, error: "" }))}
-            />
-          </div>
+          {!fiatWalletId && (
+            <div>
+              <label className="block text-xs font-medium text-[#8aa0b8] mb-1.5">Spend Limit (USD)</label>
+              <input
+                type="number"
+                min={10}
+                max={10000}
+                value={modal.spendLimit}
+                onChange={(e) => setModal((m) => ({ ...m, spendLimit: e.target.value, error: "" }))}
+              />
+            </div>
+          )}
 
           {modal.error && (
             <div className="flex items-center gap-2 text-sm text-red-400 bg-red-500/5 border border-red-500/20 rounded-lg px-3 py-2">
@@ -253,10 +289,7 @@ function PhysicalCardMockup({ colorId, holderName }: { colorId: string; holderNa
       className="relative rounded-2xl overflow-hidden shadow-2xl w-full select-none"
       style={{ background: theme.bg, aspectRatio: "1.586 / 1" }}
     >
-      {/* Shimmer top line */}
       <div className="absolute top-0 left-0 right-0 h-px" style={{ background: theme.shimmer }} />
-
-      {/* Subtle grid */}
       <div
         className="absolute inset-0 opacity-[0.03]"
         style={{
@@ -264,9 +297,7 @@ function PhysicalCardMockup({ colorId, holderName }: { colorId: string; holderNa
           backgroundSize: "24px 24px",
         }}
       />
-
       <div className="absolute inset-0 p-5 flex flex-col justify-between">
-        {/* Top row */}
         <div className="flex justify-between items-start">
           <div className="flex items-center gap-2">
             <div
@@ -284,8 +315,6 @@ function PhysicalCardMockup({ colorId, holderName }: { colorId: string; holderNa
           </div>
           <span className="text-xs italic font-light tracking-widest" style={{ color: theme.text }}>VISA</span>
         </div>
-
-        {/* Bottom */}
         <div>
           <div
             className="w-10 h-7 rounded-md mb-3 flex items-center justify-center"
@@ -297,9 +326,7 @@ function PhysicalCardMockup({ colorId, holderName }: { colorId: string; holderNa
               ))}
             </div>
           </div>
-
           <p className="font-mono text-sm tracking-widest mb-3" style={{ color: theme.text }}>•••• •••• •••• ••••</p>
-
           <div className="flex justify-between items-end">
             <div>
               <div className="text-[10px] uppercase tracking-wider mb-0.5" style={{ color: `${theme.text}` }}>Card Holder</div>
@@ -383,8 +410,11 @@ const COUNTRIES = [
   "United Arab Emirates", "Other",
 ];
 
-export default function PhysicalCardPage() {
+function PhysicalCardPageInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const preselectedWalletId = searchParams.get("wallet");
+
   const [loading, setLoading] = useState(true);
   const [request, setRequest] = useState<PhysicalCardRequest | null>(null);
   const [kycVerified, setKycVerified] = useState<boolean | null>(null);
@@ -394,6 +424,8 @@ export default function PhysicalCardPage() {
   const [showVirtualModal, setShowVirtualModal] = useState(false);
   const [cancelConfirm, setCancelConfirm] = useState(false);
   const [cancelling, setCancelling] = useState(false);
+  const [fiatWallets, setFiatWallets] = useState<LinkedFiatWallet[]>([]);
+  const [walletDropdownOpen, setWalletDropdownOpen] = useState(false);
 
   const [form, setForm] = useState({
     fullName: "",
@@ -405,26 +437,35 @@ export default function PhysicalCardPage() {
     postalCode: "",
     country: "",
     cardColor: "midnight",
+    fiatWalletId: "",
   });
 
-  useEffect(() => {
-    async function load() {
-      const [reqRes, meRes] = await Promise.all([
-        fetch("/api/physical-cards"),
-        fetch("/api/user"),
-      ]);
-      if (reqRes.ok) {
-        const data = await reqRes.json();
-        setRequest(data.request ?? null);
-      }
-      if (meRes.ok) {
-        const data = await meRes.json();
-        setKycVerified(data.user?.kycStatus === "VERIFIED");
-      }
-      setLoading(false);
+  const loadData = useCallback(async () => {
+    const [reqRes, meRes, walletsRes] = await Promise.all([
+      fetch("/api/physical-cards"),
+      fetch("/api/user"),
+      fetch("/api/fiat-wallets"),
+    ]);
+    if (reqRes.ok) {
+      const data = await reqRes.json();
+      setRequest(data.request ?? null);
     }
-    load();
-  }, []);
+    if (meRes.ok) {
+      const data = await meRes.json();
+      setKycVerified(data.user?.kycStatus === "VERIFIED");
+    }
+    if (walletsRes.ok) {
+      const data = await walletsRes.json();
+      const wallets: LinkedFiatWallet[] = data.wallets ?? [];
+      setFiatWallets(wallets);
+      if (preselectedWalletId && wallets.some((w) => w.id === preselectedWalletId)) {
+        setForm((f) => ({ ...f, fiatWalletId: preselectedWalletId }));
+      }
+    }
+    setLoading(false);
+  }, [preselectedWalletId]);
+
+  useEffect(() => { loadData(); }, [loadData]);
 
   async function handleCancel() {
     setCancelling(true);
@@ -456,10 +497,12 @@ export default function PhysicalCardPage() {
     setSubmitting(true);
     setError("");
     try {
+      const body: Record<string, string> = { ...form };
+      if (!body.fiatWalletId) delete body.fiatWalletId;
       const res = await fetch("/api/physical-cards", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify(body),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -485,6 +528,7 @@ export default function PhysicalCardPage() {
   }
 
   const previewColor = request ? (request.cardColor ?? "midnight") : form.cardColor;
+  const selectedWallet = fiatWallets.find((w) => w.id === form.fiatWalletId) ?? null;
 
   return (
     <div className="flex flex-col flex-1 overflow-y-auto">
@@ -504,7 +548,7 @@ export default function PhysicalCardPage() {
           <p className="text-sm text-[#6b88b0] mt-1">A premium matte debit card delivered to your door.</p>
         </div>
 
-        {/* Card mockup — live preview */}
+        {/* Card mockup */}
         <div className="max-w-sm space-y-3">
           <PhysicalCardMockup colorId={previewColor} holderName={form.fullName || undefined} />
           {request && (
@@ -574,6 +618,16 @@ export default function PhysicalCardPage() {
                     </span>
                   </div>
                 </div>
+                {request.fiatWallet && (
+                  <div>
+                    <div className="text-[10px] uppercase tracking-wider text-[#4a6080] mb-0.5">Linked Wallet</div>
+                    <div className="flex items-center gap-1.5">
+                      <Globe className="w-3 h-3 text-blue-400" />
+                      <span className="text-blue-300 font-medium">{request.fiatWallet.currency}</span>
+                      <span className="text-[#6b88b0]">· {request.fiatWallet.name ?? "Multi-Currency Wallet"}</span>
+                    </div>
+                  </div>
+                )}
                 {request.trackingNumber && (
                   <div>
                     <div className="text-[10px] uppercase tracking-wider text-[#4a6080] mb-0.5">Tracking Number</div>
@@ -589,7 +643,7 @@ export default function PhysicalCardPage() {
               </div>
             </div>
 
-            {/* Cancel request — only for PENDING / REVIEWING */}
+            {/* Cancel request */}
             {["PENDING", "REVIEWING"].includes(request.status) && (
               cancelConfirm ? (
                 <div className="bg-red-500/5 border border-red-500/20 rounded-xl p-5 space-y-3">
@@ -640,7 +694,11 @@ export default function PhysicalCardPage() {
                 </div>
                 <div className="text-left">
                   <div className="text-sm font-semibold text-white">Create Matching Virtual Card</div>
-                  <div className="text-xs text-[#6b88b0] mt-0.5">Use the same color online before your physical card arrives</div>
+                  <div className="text-xs text-[#6b88b0] mt-0.5">
+                    {request.fiatWallet
+                      ? `Use your ${request.fiatWallet.currency} wallet online before your physical card arrives`
+                      : "Use the same color online before your physical card arrives"}
+                  </div>
                 </div>
               </div>
               <ChevronRight className="w-4 h-4 text-[#4a6080] group-hover:text-violet-400 transition-colors shrink-0" />
@@ -672,6 +730,11 @@ export default function PhysicalCardPage() {
                 </span>{" "}
                 card and ship it to {request.city}, {request.country}. Expect delivery within 7–14 business days after approval.
               </p>
+              {request.fiatWallet && (
+                <p className="text-xs text-blue-300 mt-2">
+                  Your physical card is linked to your <strong>{request.fiatWallet.currency}</strong> wallet.
+                </p>
+              )}
             </div>
             <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
               <button
@@ -695,7 +758,7 @@ export default function PhysicalCardPage() {
         {kycVerified && !request && !success && (
           <div className="bg-[#061120] border border-[#0d2040] rounded-xl p-6">
             <h2 className="text-base font-semibold text-white mb-1">Request Your Card</h2>
-            <p className="text-xs text-[#6b88b0] mb-6">Choose a color and enter your delivery address.</p>
+            <p className="text-xs text-[#6b88b0] mb-6">Choose a color, optionally link a wallet, and enter your delivery address.</p>
 
             <form onSubmit={handleSubmit} className="space-y-5">
               {/* Color picker */}
@@ -732,6 +795,79 @@ export default function PhysicalCardPage() {
                   ))}
                 </div>
               </div>
+
+              {/* Fiat wallet link (optional) */}
+              {fiatWallets.length > 0 && (
+                <div>
+                  <label className="block text-xs font-medium text-[#8aa0b8] mb-1.5">
+                    Link to Multi-Currency Wallet
+                    <span className="text-[#4a6080] font-normal ml-1.5">Optional — card spends from this wallet</span>
+                  </label>
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setWalletDropdownOpen((o) => !o)}
+                      className="w-full flex items-center justify-between px-3 py-2.5 bg-[#020c1b] border border-[#0d2040] rounded-xl text-sm hover:border-blue-500/40 transition-colors"
+                    >
+                      {selectedWallet ? (
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-full bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
+                            <Globe className="w-3 h-3 text-blue-400" />
+                          </div>
+                          <span className="text-white font-medium">{selectedWallet.currency}</span>
+                          <span className="text-[#6b88b0]">{selectedWallet.name ?? "Multi-Currency Wallet"}</span>
+                          <span className="text-[#4a6080] text-xs ml-1">
+                            {selectedWallet.balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {selectedWallet.currency}
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-[#4a6080]">No wallet linked (standalone card)</span>
+                      )}
+                      <ChevronDown className={`w-4 h-4 text-[#4a6080] transition-transform ${walletDropdownOpen ? "rotate-180" : ""}`} />
+                    </button>
+
+                    {walletDropdownOpen && (
+                      <div className="absolute top-full left-0 right-0 mt-1 bg-[#061120] border border-[#0d2040] rounded-xl overflow-hidden shadow-xl z-10">
+                        <button
+                          type="button"
+                          onClick={() => { setField("fiatWalletId", ""); setWalletDropdownOpen(false); }}
+                          className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm hover:bg-[#0d2040] transition-colors ${!form.fiatWalletId ? "bg-[#0a1a30]" : ""}`}
+                        >
+                          <div className="w-6 h-6 rounded-full bg-[#0d2040] flex items-center justify-center shrink-0">
+                            <CreditCard className="w-3 h-3 text-[#6b88b0]" />
+                          </div>
+                          <span className="text-[#6b88b0]">No wallet (standalone card)</span>
+                        </button>
+                        {fiatWallets.map((w) => (
+                          <button
+                            key={w.id}
+                            type="button"
+                            onClick={() => { setField("fiatWalletId", w.id); setWalletDropdownOpen(false); }}
+                            className={`w-full flex items-center justify-between px-3 py-2.5 text-sm hover:bg-[#0d2040] transition-colors ${form.fiatWalletId === w.id ? "bg-blue-500/10" : ""}`}
+                          >
+                            <div className="flex items-center gap-2.5">
+                              <div className="w-6 h-6 rounded-full bg-blue-500/10 border border-blue-500/20 flex items-center justify-center shrink-0">
+                                <Globe className="w-3 h-3 text-blue-400" />
+                              </div>
+                              <span className={`font-medium ${form.fiatWalletId === w.id ? "text-blue-300" : "text-white"}`}>{w.currency}</span>
+                              <span className="text-[#6b88b0] text-xs">{w.name ?? "Multi-Currency Wallet"}</span>
+                            </div>
+                            <span className="text-[#4a6080] text-xs">
+                              {w.balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {w.currency}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {selectedWallet && (
+                    <p className="text-[10px] text-blue-400/70 mt-1.5 ml-1">
+                      Payments on this physical card will deduct from your {selectedWallet.currency} wallet balance.
+                    </p>
+                  )}
+                </div>
+              )}
 
               <div className="border-t border-[#0d2040] pt-5 space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -878,6 +1014,8 @@ export default function PhysicalCardPage() {
         <CreateVirtualCardModal
           physicalColor={request.cardColor ?? "midnight"}
           holderName={request.fullName}
+          fiatWalletId={request.fiatWalletId}
+          fiatWallet={request.fiatWallet}
           onClose={() => setShowVirtualModal(false)}
           onCreated={() => {
             setShowVirtualModal(false);
@@ -886,5 +1024,20 @@ export default function PhysicalCardPage() {
         />
       )}
     </div>
+  );
+}
+
+export default function PhysicalCardPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex flex-col flex-1 overflow-y-auto">
+        <TopBar title="Physical Card" />
+        <div className="flex items-center justify-center flex-1">
+          <div className="w-6 h-6 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin" />
+        </div>
+      </div>
+    }>
+      <PhysicalCardPageInner />
+    </Suspense>
   );
 }

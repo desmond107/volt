@@ -1,11 +1,12 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import TopBar from "@/components/dashboard/TopBar";
 import Button from "@/components/ui/Button";
 import {
   Plus, X, CheckCircle2, Search, ArrowLeftRight, Send,
   TrendingUp, Download, RefreshCw, ChevronDown, User,
-  CreditCard, Smartphone, Trash2, AlertTriangle,
+  CreditCard, Smartphone, Trash2, AlertTriangle, Truck,
 } from "lucide-react";
 import { CURRENCY_NAMES, CURRENCY_SYMBOLS, FALLBACK_RATES } from "@/lib/rates";
 import VirtualCardFace, { getTheme } from "@/components/ui/VirtualCardFace";
@@ -64,6 +65,7 @@ const ALL_CURRENCIES = Object.keys(FALLBACK_RATES).map((code) => ({
 type Modal = "add" | "deposit" | "transfer" | "send" | "convert" | "delete" | "mpesa" | "card-create" | null;
 
 export default function MultiWalletPage() {
+  const router = useRouter();
   const [wallets, setWallets] = useState<FiatWallet[]>([]);
   const [rates, setRates] = useState<Record<string, number>>(FALLBACK_RATES);
   const [loading, setLoading] = useState(true);
@@ -491,6 +493,13 @@ export default function MultiWalletPage() {
                   >
                     <CreditCard className="w-3.5 h-3.5" />
                     Create Virtual Card
+                  </button>
+                  <button
+                    onClick={() => router.push(`/dashboard/cards/physical?wallet=${wallet.id}`)}
+                    className="w-full flex items-center justify-center gap-2 py-2 rounded-xl border border-cyan-600/20 bg-cyan-500/5 text-cyan-400 text-xs font-semibold hover:bg-cyan-500/10 hover:border-cyan-600/40 transition-colors"
+                  >
+                    <Truck className="w-3.5 h-3.5" />
+                    Get Physical Card
                   </button>
                 </div>
               );

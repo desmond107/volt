@@ -9,9 +9,17 @@ export async function GET() {
   const request = await prisma.physicalCardRequest.findFirst({
     where: { userId: session.id },
     orderBy: { createdAt: "desc" },
+    include: { fiatWallet: { select: { id: true, currency: true, name: true, balance: true } } },
   });
 
-  return NextResponse.json({ request });
+  return NextResponse.json({
+    request: request ? {
+      ...request,
+      fiatWallet: request.fiatWallet
+        ? { ...request.fiatWallet, balance: request.fiatWallet.balance.toNumber() }
+        : null,
+    } : null,
+  });
 }
 
 export async function POST(req: NextRequest) {
@@ -30,7 +38,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "You already have an active card request" }, { status: 409 });
     }
 
-    const { fullName, phone, addressLine1, addressLine2, city, state, postalCode, country, cardColor } = await req.json();
+    const { fullName, phone, addressLine1, addressLine2, city, state, postalCode, country, cardColor, fiatWalletId } = await req.json();
 
     if (!fullName?.trim() || !phone?.trim() || !addressLine1?.trim() || !city?.trim() || !postalCode?.trim() || !country?.trim()) {
       return NextResponse.json({ error: "Please fill in all required fields" }, { status: 400 });
@@ -38,6 +46,15 @@ export async function POST(req: NextRequest) {
 
     const validColors = ["midnight", "white", "navy", "gold", "rosegold", "arctic"];
     const resolvedColor = validColors.includes(cardColor) ? cardColor : "midnight";
+
+    let resolvedFiatWalletId: string | null = null;
+    if (fiatWalletId) {
+      const wallet = await prisma.fiatWallet.findUnique({ where: { id: fiatWalletId } });
+      if (!wallet || wallet.userId !== session.id) {
+        return NextResponse.json({ error: "Fiat wallet not found" }, { status: 404 });
+      }
+      resolvedFiatWalletId = fiatWalletId;
+    }
 
     const request = await prisma.physicalCardRequest.create({
       data: {
@@ -51,10 +68,19 @@ export async function POST(req: NextRequest) {
         postalCode: postalCode.trim(),
         country: country.trim(),
         cardColor: resolvedColor,
+        ...(resolvedFiatWalletId ? { fiatWalletId: resolvedFiatWalletId } : {}),
       },
+      include: { fiatWallet: { select: { id: true, currency: true, name: true, balance: true } } },
     });
 
-    return NextResponse.json({ request });
+    return NextResponse.json({
+      request: {
+        ...request,
+        fiatWallet: request.fiatWallet
+          ? { ...request.fiatWallet, balance: request.fiatWallet.balance.toNumber() }
+          : null,
+      },
+    });
   } catch {
     return NextResponse.json({ error: "Failed to submit request" }, { status: 500 });
   }

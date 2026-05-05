@@ -1,10 +1,11 @@
 "use client";
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useRouter } from "next/navigation";
 import TopBar from "@/components/dashboard/TopBar";
 import VirtualCardFace, { getTheme } from "@/components/ui/VirtualCardFace";
 import EagleLogo from "@/components/ui/EagleLogo";
 import { formatCurrency, maskCardNumber } from "@/lib/utils";
-import { Plus, CreditCard, Eye, EyeOff, Snowflake, Trash2, AlertCircle, Link2, Link2Off, X, ArrowDownLeft, Wifi, WifiOff, Maximize2, ShoppingCart, CheckCircle2, ChevronRight, SlidersHorizontal, Globe } from "lucide-react";
+import { Plus, CreditCard, Eye, EyeOff, Snowflake, Trash2, AlertCircle, Link2, Link2Off, X, ArrowDownLeft, Wifi, WifiOff, Maximize2, ShoppingCart, CheckCircle2, ChevronRight, SlidersHorizontal, Globe, Truck } from "lucide-react";
 import Button from "@/components/ui/Button";
 import Link from "next/link";
 
@@ -485,6 +486,7 @@ function Card3DViewer({ card, onClose }: { card: VirtualCard; onClose: () => voi
 }
 
 export default function CardsPage() {
+  const router = useRouter();
   const [cards, setCards] = useState<VirtualCard[]>([]);
   const [wallets, setWallets] = useState<Wallet[]>([]);
   const [loading, setLoading] = useState(true);
@@ -747,7 +749,7 @@ export default function CardsPage() {
         )}
 
         {/* Actions — row 1 */}
-        <div className={`grid gap-2 ${card.fiatWalletId ? "grid-cols-3" : "grid-cols-4"}`}>
+        <div className="grid grid-cols-4 gap-2">
           <button
             onClick={() => setRevealedCard(revealed ? null : card.id)}
             className="flex flex-col items-center justify-center gap-1 py-2.5 text-xs font-medium text-blue-300 hover:text-white bg-[#061120] border border-blue-500/20 rounded-lg hover:border-blue-500/50 transition-colors"
@@ -764,7 +766,16 @@ export default function CardsPage() {
             <Link2 className="w-4 h-4" />
             {card.fiatWalletId ? "Linked" : card.wallet ? "Relink" : "Link"}
           </button>
-          {!card.fiatWalletId && (
+          {card.fiatWalletId ? (
+            <button
+              onClick={() => router.push(`/dashboard/cards/physical?wallet=${card.fiatWalletId}`)}
+              title="Order a physical card linked to this wallet"
+              className="flex flex-col items-center justify-center gap-1 py-2.5 text-xs font-medium text-cyan-300 hover:text-cyan-100 bg-[#061120] border border-cyan-500/20 rounded-lg hover:border-cyan-500/50 transition-colors"
+            >
+              <Truck className="w-4 h-4" />
+              Physical
+            </button>
+          ) : (
             <button
               onClick={() => { setFundModal(card); setFundAmount(""); setFundError(""); }}
               disabled={!hasLinkedWallet}
