@@ -3,6 +3,9 @@
     "allow": [
       "Bash(xargs ls *)",
       "Bash(grep -v \"^$\")"
+    ],
+    "additionalDirectories": [
+      "/Users/desmond/Desktop/codebase/volt/src/app/api/wallet"
     ]
   }
 }

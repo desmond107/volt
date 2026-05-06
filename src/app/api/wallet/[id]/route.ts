@@ -1,0 +1,26 @@
+import { NextRequest, NextResponse } from "next/server";
+import { getSession } from "@/lib/session";
+import { prisma } from "@/lib/prisma";
+
+export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const session = await getSession();
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const { id } = await params;
+  const wallet = await prisma.wallet.findUnique({ where: { id } });
+
+  if (!wallet || wallet.userId !== session.id) {
+    return NextResponse.json({ error: "Wallet not found" }, { status: 404 });
+  }
+
+  if (wallet.balance.toNumber() >= 0.01) {
+    return NextResponse.json(
+      { error: "Wallet still has funds. Transfer or send funds first." },
+      { status: 400 }
+    );
+  }
+
+  await prisma.wallet.delete({ where: { id } });
+
+  return NextResponse.json({ success: true });
+}

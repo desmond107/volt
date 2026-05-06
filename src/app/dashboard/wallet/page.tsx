@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from "react";
 import TopBar from "@/components/dashboard/TopBar";
 import { formatCurrency, truncateAddress } from "@/lib/utils";
-import { Copy, Download, ArrowUpRight, RefreshCw, CheckCircle2, CreditCard, Smartphone, X, ArrowLeftRight, Send, Search, User } from "lucide-react";
+import { Copy, Download, ArrowUpRight, RefreshCw, CheckCircle2, CreditCard, Smartphone, X, ArrowLeftRight, Send, Search, User, Plus, Trash2, AlertTriangle } from "lucide-react";
 import Button from "@/components/ui/Button";
 
 interface Wallet {
@@ -19,12 +19,38 @@ const assetColors: Record<string, string> = {
   DAI: "#f4b731",
 };
 
+const SUPPORTED_ASSETS: Record<string, string[]> = {
+  USDC: ["Base", "BNB Smart Chain"],
+  USDT: ["BNB Smart Chain"],
+  DAI:  ["Base"],
+};
+
+const ASSET_DESCRIPTIONS: Record<string, string> = {
+  USDC: "USD Coin — fully-backed stablecoin by Circle",
+  USDT: "Tether — largest stablecoin by market cap",
+  DAI:  "Dai — decentralised, crypto-backed stablecoin",
+};
+
 const KES_RATE = 129.5; // 1 USD = 129.5 KES
 
 export default function WalletPage() {
   const [wallets, setWallets] = useState<Wallet[]>([]);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState<string | null>(null);
+
+  // Create wallet state
+  const [createModal, setCreateModal] = useState(false);
+  const [createAsset, setCreateAsset] = useState("");
+  const [createNetwork, setCreateNetwork] = useState("");
+  const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState("");
+  const [createSuccess, setCreateSuccess] = useState(false);
+
+  // Delete wallet state
+  const [deleteModal, setDeleteModal] = useState<Wallet | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
+  const [deleteSuccess, setDeleteSuccess] = useState(false);
 
   // Deposit state
   const [depositModal, setDepositModal] = useState<Wallet | null>(null);
@@ -72,6 +98,64 @@ useEffect(() => { fetchWallets(); }, [fetchWallets]);
     await navigator.clipboard.writeText(text);
     setCopied(key);
     setTimeout(() => setCopied(null), 2000);
+  };
+
+  // ── Create wallet helpers ────────────────────────────────────────────────────
+  const openCreateModal = () => {
+    setCreateModal(true);
+    setCreateAsset("");
+    setCreateNetwork("");
+    setCreating(false);
+    setCreateError("");
+    setCreateSuccess(false);
+  };
+
+  const closeCreateModal = () => {
+    setCreateModal(false);
+  };
+
+  const handleCreate = async () => {
+    if (!createAsset || !createNetwork) return;
+    setCreating(true);
+    setCreateError("");
+    const res = await fetch("/api/wallet", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ asset: createAsset, network: createNetwork }),
+    });
+    if (res.ok) {
+      await fetchWallets();
+      setCreateSuccess(true);
+    } else {
+      const d = await res.json();
+      setCreateError(d.error ?? "Failed to create wallet");
+    }
+    setCreating(false);
+  };
+
+  // ── Delete wallet helpers ────────────────────────────────────────────────────
+  const openDeleteModal = (wallet: Wallet) => {
+    setDeleteModal(wallet);
+    setDeleting(false);
+    setDeleteError("");
+    setDeleteSuccess(false);
+  };
+
+  const closeDeleteModal = () => setDeleteModal(null);
+
+  const handleDelete = async () => {
+    if (!deleteModal) return;
+    setDeleting(true);
+    setDeleteError("");
+    const res = await fetch(`/api/wallet/${deleteModal.id}`, { method: "DELETE" });
+    if (res.ok) {
+      await fetchWallets();
+      setDeleteSuccess(true);
+    } else {
+      const d = await res.json();
+      setDeleteError(d.error ?? "Failed to delete wallet");
+    }
+    setDeleting(false);
   };
 
   // ── Deposit helpers ──────────────────────────────────────────────────────────
@@ -243,10 +327,16 @@ useEffect(() => { fetchWallets(); }, [fetchWallets]);
 
       <main className="flex-1 p-6 space-y-6">
         {/* Total balance */}
-        <div className="bg-gradient-to-br from-blue-950/50 via-[#061120] to-[#061120] border border-blue-600/20 rounded-2xl p-6">
-          <div className="text-sm text-[#6b88b0] mb-1">Total Portfolio Value</div>
-          <div className="text-4xl font-bold text-white mb-1">{formatCurrency(totalUSD)}</div>
-          <div className="text-sm text-[#6b88b0]">{wallets.length} wallets across {[...new Set(wallets.map((w) => w.network))].join(", ")}</div>
+        <div className="bg-gradient-to-br from-blue-950/50 via-[#061120] to-[#061120] border border-blue-600/20 rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <div className="text-sm text-[#6b88b0] mb-1">Total Portfolio Value</div>
+            <div className="text-4xl font-bold text-white mb-1">{formatCurrency(totalUSD)}</div>
+            <div className="text-sm text-[#6b88b0]">{wallets.length} wallet{wallets.length !== 1 ? "s" : ""}{wallets.length > 0 ? ` across ${[...new Set(wallets.map((w) => w.network))].join(", ")}` : ""}</div>
+          </div>
+          <Button onClick={openCreateModal} className="gap-2 shrink-0">
+            <Plus className="w-4 h-4" />
+            Add Wallet
+          </Button>
         </div>
 
         {/* Wallet cards */}
@@ -256,6 +346,20 @@ useEffect(() => { fetchWallets(); }, [fetchWallets]);
               <div key={i} className="h-40 bg-[#061120] border border-[#0d2040] rounded-xl animate-pulse" />
             ))}
           </div>
+        ) : wallets.length === 0 ? (
+          <div className="bg-[#061120] border border-[#0d2040] rounded-2xl p-16 text-center">
+            <div className="w-16 h-16 rounded-full bg-blue-600/10 border border-blue-600/20 flex items-center justify-center mx-auto mb-4">
+              <Plus className="w-7 h-7 text-blue-400" />
+            </div>
+            <h3 className="text-lg font-semibold text-white mb-2">No wallets yet</h3>
+            <p className="text-sm text-[#6b88b0] mb-6 max-w-xs mx-auto">
+              Create your first digital currency wallet to hold USDT, USDC, or DAI stablecoins.
+            </p>
+            <Button onClick={openCreateModal}>
+              <Plus className="w-4 h-4" />
+              Create Your First Wallet
+            </Button>
+          </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             {wallets.map((wallet) => {
@@ -263,9 +367,9 @@ useEffect(() => { fetchWallets(); }, [fetchWallets]);
               return (
                 <div
                   key={wallet.id}
-                  className="bg-[#061120] border border-[#0d2040] rounded-xl p-5 hover:border-blue-600/30 transition-colors"
+                  className="bg-[#061120] border border-[#0d2040] rounded-xl p-5 hover:border-blue-600/30 transition-colors flex flex-col gap-4"
                 >
-                  <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div
                         className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm"
@@ -278,21 +382,29 @@ useEffect(() => { fetchWallets(); }, [fetchWallets]);
                         <div className="text-xs text-[#6b88b0]">{wallet.network}</div>
                       </div>
                     </div>
-                    <button
-                      onClick={() => fetchWallets()}
-                      className="p-1.5 text-[#6b88b0] hover:text-white rounded-lg hover:bg-[#0d2040] transition-colors"
-                    >
-                      <RefreshCw className="w-3.5 h-3.5" />
-                    </button>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => fetchWallets()}
+                        className="p-1.5 text-[#6b88b0] hover:text-white rounded-lg hover:bg-[#0d2040] transition-colors"
+                      >
+                        <RefreshCw className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => openDeleteModal(wallet)}
+                        className="p-1.5 text-[#6b88b0] hover:text-red-400 rounded-lg hover:bg-red-500/10 transition-colors"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
 
-                  <div className="mb-4">
+                  <div>
                     <div className="text-2xl font-bold text-white">{wallet.balance.toFixed(2)}</div>
                     <div className="text-sm text-[#6b88b0]">{formatCurrency(wallet.balance)} USD</div>
                   </div>
 
                   {/* Address */}
-                  <div className="bg-[#020c1b] border border-[#0d2040] rounded-lg p-2.5 flex items-center justify-between mb-4">
+                  <div className="bg-[#020c1b] border border-[#0d2040] rounded-lg p-2.5 flex items-center justify-between">
                     <span className="text-xs font-mono text-[#6b88b0]">{truncateAddress(wallet.address)}</span>
                     <button
                       onClick={() => handleCopy(wallet.address, wallet.id)}
@@ -334,6 +446,17 @@ useEffect(() => { fetchWallets(); }, [fetchWallets]);
                 </div>
               );
             })}
+
+            {/* Add wallet shortcut */}
+            <button
+              onClick={openCreateModal}
+              className="bg-[#061120] border border-dashed border-[#0d2040] rounded-xl p-5 flex flex-col items-center justify-center gap-3 hover:border-blue-600/40 hover:bg-blue-600/5 transition-all text-[#6b88b0] hover:text-blue-400 min-h-[180px]"
+            >
+              <div className="w-11 h-11 rounded-full border border-dashed border-[#0d2040] flex items-center justify-center">
+                <Plus className="w-5 h-5" />
+              </div>
+              <span className="text-sm font-medium">Add Wallet</span>
+            </button>
           </div>
         )}
 
@@ -369,6 +492,193 @@ useEffect(() => { fetchWallets(); }, [fetchWallets]);
           </div>
         </div>
       </main>
+
+      {/* ── Create Wallet modal ──────────────────────────────────────────────── */}
+      {createModal && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-[#061120] border border-[#0d2040] rounded-2xl w-full max-w-md">
+            <div className="flex items-center justify-between p-6 border-b border-[#0d2040]">
+              <div>
+                <h2 className="text-lg font-semibold text-white">Add Digital Currency Wallet</h2>
+                <p className="text-xs text-[#6b88b0] mt-0.5">Choose a stablecoin and network</p>
+              </div>
+              <button onClick={closeCreateModal} className="p-2 text-[#6b88b0] hover:text-white rounded-lg hover:bg-[#0d2040] transition-colors">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {createSuccess ? (
+              <div className="p-8 text-center">
+                <div className="w-16 h-16 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mx-auto mb-4">
+                  <CheckCircle2 className="w-8 h-8 text-emerald-400" />
+                </div>
+                <h3 className="text-lg font-semibold text-white mb-2">Wallet Created!</h3>
+                <p className="text-sm text-[#6b88b0] mb-1">
+                  Your <span className="text-white font-medium">{createAsset}</span> wallet on{" "}
+                  <span className="text-white font-medium">{createNetwork}</span> is ready.
+                </p>
+                <Button className="mt-6 w-full" onClick={closeCreateModal}>Done</Button>
+              </div>
+            ) : (
+              <div className="p-6 space-y-5">
+                {/* Asset selection */}
+                <div>
+                  <label className="block text-sm font-medium text-[#c0d4ef] mb-2">Stablecoin</label>
+                  <div className="space-y-2">
+                    {(["USDC", "USDT", "DAI"] as const).map((asset) => (
+                      <button
+                        key={asset}
+                        onClick={() => { setCreateAsset(asset); setCreateNetwork(""); }}
+                        className={`w-full flex items-center gap-3 p-3 rounded-xl border text-left transition-all ${
+                          createAsset === asset
+                            ? "border-blue-500/50 bg-blue-500/10"
+                            : "border-[#0d2040] hover:border-[#1a3a60]"
+                        }`}
+                      >
+                        <div
+                          className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-sm shrink-0"
+                          style={{ backgroundColor: assetColors[asset] }}
+                        >
+                          {asset[0]}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-semibold text-white">{asset}</div>
+                          <div className="text-xs text-[#6b88b0] truncate">{ASSET_DESCRIPTIONS[asset]}</div>
+                        </div>
+                        {createAsset === asset && <CheckCircle2 className="w-4 h-4 text-blue-400 shrink-0" />}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Network selection */}
+                {createAsset && (
+                  <div>
+                    <label className="block text-sm font-medium text-[#c0d4ef] mb-2">Network</label>
+                    <div className="space-y-2">
+                      {SUPPORTED_ASSETS[createAsset].map((net) => (
+                        <button
+                          key={net}
+                          onClick={() => setCreateNetwork(net)}
+                          className={`w-full flex items-center justify-between p-3 rounded-xl border text-left transition-all ${
+                            createNetwork === net
+                              ? "border-emerald-500/50 bg-emerald-500/10"
+                              : "border-[#0d2040] hover:border-[#1a3a60]"
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 rounded-full bg-emerald-400 shrink-0" />
+                            <span className="text-sm font-medium text-white">{net}</span>
+                          </div>
+                          {createNetwork === net && <CheckCircle2 className="w-4 h-4 text-emerald-400" />}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {createError && <p className="text-xs text-red-400">{createError}</p>}
+
+                <div className="flex gap-3 pt-1">
+                  <Button variant="secondary" className="flex-1" onClick={closeCreateModal}>Cancel</Button>
+                  <Button
+                    className="flex-1"
+                    loading={creating}
+                    disabled={!createAsset || !createNetwork}
+                    onClick={handleCreate}
+                  >
+                    Create Wallet
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── Delete Wallet modal ──────────────────────────────────────────────── */}
+      {deleteModal && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-[#061120] border border-[#0d2040] rounded-2xl w-full max-w-md">
+            <div className="flex items-center justify-between p-6 border-b border-[#0d2040]">
+              <div>
+                <h2 className="text-lg font-semibold text-white">Delete {deleteModal.asset} Wallet</h2>
+                <p className="text-xs text-[#6b88b0] mt-0.5">{deleteModal.network}</p>
+              </div>
+              <button onClick={closeDeleteModal} className="p-2 text-[#6b88b0] hover:text-white rounded-lg hover:bg-[#0d2040] transition-colors">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {deleteSuccess ? (
+              <div className="p-8 text-center">
+                <div className="w-16 h-16 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mx-auto mb-4">
+                  <CheckCircle2 className="w-8 h-8 text-emerald-400" />
+                </div>
+                <h3 className="text-lg font-semibold text-white mb-2">Wallet Deleted</h3>
+                <p className="text-sm text-[#6b88b0]">
+                  Your <span className="text-white font-medium">{deleteModal.asset}</span> wallet has been removed.
+                </p>
+                <Button className="mt-6 w-full" onClick={closeDeleteModal}>Done</Button>
+              </div>
+            ) : deleteModal.balance >= 0.01 ? (
+              <div className="p-6 space-y-5">
+                <div className="flex gap-3 bg-amber-500/5 border border-amber-500/20 rounded-xl p-4">
+                  <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-medium text-amber-300">Wallet must be empty before deleting</p>
+                    <p className="text-xs text-[#6b88b0] mt-1">
+                      This wallet still holds{" "}
+                      <span className="text-white font-medium">{deleteModal.balance.toFixed(2)} {deleteModal.asset}</span>.
+                      {" "}Move all funds first using one of the options below.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <p className="text-xs font-medium text-[#6b88b0] uppercase tracking-wider">Empty your wallet by</p>
+                  {[
+                    { label: "Transfer to another wallet", action: () => { closeDeleteModal(); setTransferModal(deleteModal); setTransferToId(""); } },
+                    { label: "Send to another user", action: () => { closeDeleteModal(); setSendModal(deleteModal); } },
+                  ].map(({ label, action }) => (
+                    <button key={label} onClick={action}
+                      className="w-full flex items-center justify-between px-4 py-3 rounded-xl border border-[#0d2040] text-sm text-[#6b88b0] hover:border-blue-600/30 hover:text-white hover:bg-blue-600/5 transition-all text-left">
+                      <span>{label}</span>
+                      <ArrowUpRight className="w-4 h-4 shrink-0" />
+                    </button>
+                  ))}
+                </div>
+
+                <Button className="w-full" onClick={closeDeleteModal}>Got it</Button>
+              </div>
+            ) : (
+              <div className="p-6 space-y-5">
+                <p className="text-sm text-[#6b88b0]">
+                  Your <span className="text-white font-medium">{deleteModal.asset}</span> wallet on{" "}
+                  <span className="text-white font-medium">{deleteModal.network}</span> is empty.
+                  Deleting it will also remove its transaction history. This cannot be undone.
+                </p>
+                {deleteError && <p className="text-xs text-red-400">{deleteError}</p>}
+                <div className="flex gap-3">
+                  <Button variant="secondary" className="flex-1" onClick={closeDeleteModal}>Cancel</Button>
+                  <button
+                    onClick={handleDelete}
+                    disabled={deleting}
+                    className="flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-sm font-semibold hover:bg-red-500/20 hover:border-red-500/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {deleting ? (
+                      <span className="w-4 h-4 border-2 border-red-400/30 border-t-red-400 rounded-full animate-spin" />
+                    ) : (
+                      <Trash2 className="w-4 h-4" />
+                    )}
+                    {deleting ? "Deleting…" : "Delete Wallet"}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* ── Deposit modal ─────────────────────────────────────────────────────── */}
       {depositModal && (
