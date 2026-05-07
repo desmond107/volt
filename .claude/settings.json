@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Bash(xargs ls *)",
-      "Bash(grep -v \"^$\")"
+      "Bash(grep -v \"^$\")",
+      "Bash(git checkout *)"
     ],
     "additionalDirectories": [
       "/Users/desmond/Desktop/codebase/volt/src/app/api/wallet"

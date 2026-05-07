@@ -37,7 +37,7 @@ export default function Navbar({ isLoggedIn = false }: { isLoggedIn?: boolean })
             <EagleLogo size={40} />
             <div className="flex flex-col leading-none">
               <span className="font-bold text-base tracking-tight text-white">Volt</span>
-              <span className="text-[9px] text-[#c9943a] uppercase tracking-[0.15em] font-semibold">Digital Pay</span>
+              <span className="text-[9px] text-[#c9943a] uppercase tracking-[0.15em] font-semibold">Digital Cards</span>
             </div>
           </Link>
 

@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { randomBytes } from "crypto";
 import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { serializeDecimals } from "@/lib/utils";
+import { createCrossmintWallet } from "@/lib/crossmint";
+import { getOrCreateStream, watchAddress } from "@/lib/moralis-streams";
 
 const SUPPORTED_ASSETS: Record<string, string[]> = {
   USDC: ["Base", "BNB Smart Chain"],
@@ -19,7 +20,6 @@ export async function GET() {
       where: { userId: session.id },
       orderBy: { createdAt: "asc" },
     });
-
     return NextResponse.json({ wallets: serializeDecimals(wallets) });
   } catch {
     return NextResponse.json({ error: "Failed to fetch wallets" }, { status: 500 });
@@ -36,10 +36,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid asset. Supported: USDC, USDT, DAI" }, { status: 400 });
   }
   if (!network || !SUPPORTED_ASSETS[asset].includes(network)) {
-    return NextResponse.json(
-      { error: `${asset} is not available on ${network}` },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: `${asset} is not available on ${network}` }, { status: 400 });
   }
 
   const existing = await prisma.wallet.findFirst({
@@ -48,15 +45,38 @@ export async function POST(req: NextRequest) {
   if (existing) {
     return NextResponse.json(
       { error: `You already have a ${asset} wallet on ${network}` },
-      { status: 409 }
+      { status: 409 },
     );
   }
 
-  const address = "0x" + randomBytes(20).toString("hex");
+  try {
+    const user = await prisma.user.findUnique({ where: { id: session.id } });
+    if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 });
 
-  const wallet = await prisma.wallet.create({
-    data: { userId: session.id, asset, network, address },
-  });
+    // 1. Create a real on-chain wallet via Crossmint
+    const { walletId: crossmintWalletId, address } = await createCrossmintWallet(
+      user.email,
+      network,
+    );
 
-  return NextResponse.json({ wallet: serializeDecimals(wallet) }, { status: 201 });
+    // 2. Register address with Moralis so incoming deposits trigger our webhook
+    const streamId = await getOrCreateStream();
+    await watchAddress(streamId, address);
+
+    // 3. Persist wallet with Crossmint reference (address stored lowercase for consistent lookup)
+    const wallet = await prisma.wallet.create({
+      data: {
+        userId: session.id,
+        asset,
+        network,
+        address,
+        crossmintWalletId,
+      },
+    });
+
+    return NextResponse.json({ wallet: serializeDecimals(wallet) }, { status: 201 });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Wallet creation failed";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
 }

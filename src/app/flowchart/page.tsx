@@ -402,7 +402,7 @@ export default function FlowchartPage() {
       </div>
 
       <div className="px-8 py-3 border-t border-[#0d2040] text-xs text-[#4a6080] flex items-center justify-between">
-        <span>Volt Digital Pay — System Architecture Flowchart</span>
+        <span>Volt Digital Cards — System Architecture Flowchart</span>
         <span>{nodes.length} nodes · {edges.length} connections</span>
       </div>
     </div>
