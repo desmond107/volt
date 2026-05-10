@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { CURRENCY_NAMES } from "@/lib/rates";
+import { genRef } from "@/lib/utils";
 
 export async function POST(req: NextRequest) {
   const session = await getSession();
@@ -10,6 +11,9 @@ export async function POST(req: NextRequest) {
   const { fromWalletId, recipientEmail, amount } = await req.json();
   if (!fromWalletId || !recipientEmail || !amount || amount <= 0) {
     return NextResponse.json({ error: "Invalid parameters" }, { status: 400 });
+  }
+  if (amount > 50_000) {
+    return NextResponse.json({ error: "Single send cannot exceed 50,000" }, { status: 400 });
   }
 
   const from = await prisma.fiatWallet.findUnique({ where: { id: fromWalletId } });
@@ -43,7 +47,7 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  const ref = `SEND-${Date.now()}`;
+  const ref = genRef("SEND");
   const recipientName = recipient.name ?? recipient.email;
 
   await prisma.$transaction(async (tx) => {

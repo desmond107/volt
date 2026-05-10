@@ -6,7 +6,40 @@ import { prisma } from "@/lib/prisma";
 const MAX_ATTEMPTS = 5;
 const LOCK_MINUTES = 15;
 
+// IP-level rate limit: max 20 login attempts per IP per 15 minutes
+const ipAttempts = new Map<string, { count: number; resetAt: number }>();
+const IP_MAX = 20;
+const IP_WINDOW_MS = 15 * 60 * 1000;
+
+function getIp(req: NextRequest): string {
+  return (
+    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+    req.headers.get("x-real-ip") ??
+    "unknown"
+  );
+}
+
+function isIpRateLimited(ip: string): boolean {
+  const now = Date.now();
+  const entry = ipAttempts.get(ip);
+  if (!entry || now > entry.resetAt) {
+    ipAttempts.set(ip, { count: 1, resetAt: now + IP_WINDOW_MS });
+    return false;
+  }
+  if (entry.count >= IP_MAX) return true;
+  entry.count++;
+  return false;
+}
+
 export async function POST(req: NextRequest) {
+  const ip = getIp(req);
+  if (isIpRateLimited(ip)) {
+    return NextResponse.json(
+      { error: "Too many login attempts from this IP. Try again in 15 minutes." },
+      { status: 429 }
+    );
+  }
+
   try {
     const { email, password } = await req.json();
 

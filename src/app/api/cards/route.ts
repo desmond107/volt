@@ -52,6 +52,13 @@ export async function POST(req: NextRequest) {
     const rawCardNumber = generateCardNumber();
     const rawCvv = generateCVV();
 
+    const resolvedSpendLimit = (() => {
+      const v = Number(spendLimit);
+      if (!spendLimit && spendLimit !== 0) return 1000;
+      if (!Number.isFinite(v) || v < 0) return 1000;
+      return Math.min(v, 100_000);
+    })();
+
     const card = await prisma.virtualCard.create({
       data: {
         userId: session.id,
@@ -61,7 +68,7 @@ export async function POST(req: NextRequest) {
         expiryYear,
         cardHolder: session.name ?? "STERLING USER",
         label: label || "Virtual Card",
-        spendLimit: spendLimit || 1000,
+        spendLimit: resolvedSpendLimit,
         color: color || "#6366f1",
         currency: resolvedCurrency,
         brand: brand === "MASTERCARD" ? "MASTERCARD" : "VISA",

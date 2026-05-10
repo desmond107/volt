@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { getRates, convertAmount, FALLBACK_RATES, CURRENCY_NAMES } from "@/lib/rates";
+import { genRef } from "@/lib/utils";
 
 export async function POST(req: NextRequest) {
   const session = await getSession();
@@ -12,6 +13,9 @@ export async function POST(req: NextRequest) {
 
   if (!fromWalletId || !target || !amount || amount <= 0) {
     return NextResponse.json({ error: "Invalid parameters" }, { status: 400 });
+  }
+  if (amount > 50_000) {
+    return NextResponse.json({ error: "Single conversion cannot exceed 50,000" }, { status: 400 });
   }
   if (!FALLBACK_RATES[target]) {
     return NextResponse.json({ error: "Unsupported currency" }, { status: 400 });
@@ -31,7 +35,7 @@ export async function POST(req: NextRequest) {
   const rates = await getRates();
   const received = convertAmount(amount, from.currency, target, rates);
   const rate = rates[target] / (rates[from.currency] ?? 1);
-  const ref = `CONV-${Date.now()}`;
+  const ref = genRef("CONV");
 
   // Find or create the target wallet
   let toWallet = await prisma.fiatWallet.findFirst({

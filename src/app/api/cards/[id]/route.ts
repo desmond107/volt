@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
-import { serializeDecimals } from "@/lib/utils";
+import { serializeDecimals, genRef } from "@/lib/utils";
 import { decryptCard } from "@/lib/card-crypto";
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -29,16 +29,36 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       await prisma.virtualCard.update({ where: { id }, data: { status: "ACTIVE", freezeUntil: null } });
     }
 
+    const ALLOWED_STATUSES = new Set(["ACTIVE", "FROZEN"]);
+    if (body.status !== undefined && !ALLOWED_STATUSES.has(body.status)) {
+      return NextResponse.json({ error: "Invalid status" }, { status: 400 });
+    }
+
+    // Cap freeze duration at 90 days to prevent indefinite freezes
+    let resolvedFreezeUntil: Date | null | undefined = undefined;
+    if ("freezeUntil" in body) {
+      if (!body.freezeUntil) {
+        resolvedFreezeUntil = null;
+      } else {
+        const requested = new Date(body.freezeUntil);
+        const maxFreeze = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000);
+        resolvedFreezeUntil = requested > maxFreeze ? maxFreeze : requested;
+      }
+    }
+
     const updated = await prisma.virtualCard.update({
       where: { id },
       data: {
         ...(body.status !== undefined      && { status: body.status }),
         ...(body.label !== undefined       && { label: body.label }),
-        ...(body.spendLimit !== undefined  && { spendLimit: body.spendLimit }),
+        ...(body.spendLimit !== undefined  && (() => {
+          const v = Number(body.spendLimit);
+          return Number.isFinite(v) && v >= 0 ? { spendLimit: Math.min(v, 100_000) } : {};
+        })()),
         ...(body.nfcEnabled !== undefined  && { nfcEnabled: body.nfcEnabled }),
         ...(body.oneTimeUse !== undefined  && { oneTimeUse: body.oneTimeUse }),
         ...("walletId" in body             && { walletId: body.walletId ?? null }),
-        ...("freezeUntil" in body          && { freezeUntil: body.freezeUntil ? new Date(body.freezeUntil) : null }),
+        ...(resolvedFreezeUntil !== undefined && { freezeUntil: resolvedFreezeUntil }),
       },
       include: { wallet: { select: { id: true, asset: true, network: true, balance: true } } },
     });
@@ -73,7 +93,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
               amount: cardBalance,
               currency: wallet.asset,
               description: `Refund from deleted card: ${card.label ?? "Virtual Card"}`,
-              reference: `REFUND-${id}-${Date.now()}`,
+              reference: genRef("REFUND"),
             },
           });
         });
@@ -82,8 +102,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
     }
     await prisma.virtualCard.update({ where: { id }, data: { status: "TERMINATED" } });
     return NextResponse.json({ ok: true, refunded: 0 });
-  } catch (error) {
-    console.error("[DELETE /api/cards/[id]]", error);
+  } catch {
     return NextResponse.json({ error: "Failed to delete card" }, { status: 500 });
   }
 }

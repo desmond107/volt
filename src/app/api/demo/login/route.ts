@@ -3,13 +3,13 @@ import { prisma } from "@/lib/prisma";
 import { setSession } from "@/lib/session";
 import { hashPassword } from "@/lib/auth";
 import { encryptCardField } from "@/lib/card-crypto";
+import { randomBytes } from "crypto";
 
 const DEMO_EMAIL = "demo@zpesa.com";
 const DEMO_NAME = "Demo User";
 
 function genAddress() {
-  const chars = "0123456789abcdef";
-  return "0x" + Array.from({ length: 40 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
+  return "0x" + randomBytes(20).toString("hex");
 }
 
 export async function POST() {
@@ -55,7 +55,7 @@ export async function POST() {
               walletId: usdcWallet.id,
               ...t,
               fee: t.type === "CARD_PAYMENT" ? +(t.amount * 0.01).toFixed(2) : 0,
-              reference: `demo_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+              reference: `demo_${randomBytes(6).toString("hex")}`,
             },
           });
         }

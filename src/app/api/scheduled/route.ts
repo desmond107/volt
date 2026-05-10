@@ -31,10 +31,18 @@ export async function POST(req: NextRequest) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  const VALID_FREQUENCIES = new Set(["DAILY", "WEEKLY", "MONTHLY", "YEARLY"]);
+
   const { walletId, toAddress, amount, currency, description, frequency } = await req.json();
 
   if (!walletId || !toAddress || !amount || !frequency) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+  }
+  if (!VALID_FREQUENCIES.has(frequency)) {
+    return NextResponse.json({ error: "frequency must be DAILY, WEEKLY, MONTHLY, or YEARLY" }, { status: 400 });
+  }
+  if (typeof amount !== "number" || amount <= 0 || amount > 50_000) {
+    return NextResponse.json({ error: "amount must be a positive number no greater than 50,000" }, { status: 400 });
   }
 
   const wallet = await prisma.wallet.findFirst({ where: { id: walletId, userId: session.id } });
@@ -61,8 +69,13 @@ export async function PATCH(req: NextRequest) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  const VALID_STATUSES = new Set(["ACTIVE", "PAUSED", "CANCELLED"]);
+
   const { id, status } = await req.json();
   if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
+  if (status !== undefined && !VALID_STATUSES.has(status)) {
+    return NextResponse.json({ error: "status must be ACTIVE, PAUSED, or CANCELLED" }, { status: 400 });
+  }
 
   const payment = await prisma.scheduledPayment.findFirst({ where: { id, userId: session.id } });
   if (!payment) return NextResponse.json({ error: "Not found" }, { status: 404 });

@@ -77,6 +77,12 @@ export function generateWalletAddress() {
   return "0x" + randomBytes(20).toString("hex");
 }
 
+/** Generates a collision-resistant transaction reference with a readable prefix. */
+export function genRef(prefix: string): string {
+  const { randomBytes } = require("crypto") as typeof import("crypto");
+  return `${prefix}-${randomBytes(8).toString("hex")}`;
+}
+
 export function truncateAddress(address: string) {
   return `${address.slice(0, 6)}...${address.slice(-4)}`;
 }

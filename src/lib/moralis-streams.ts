@@ -1,5 +1,6 @@
 import { keccak256 } from "ethereum-cryptography/keccak.js";
 import { utf8ToBytes, bytesToHex } from "ethereum-cryptography/utils.js";
+import { timingSafeEqual } from "crypto";
 import { TOKEN_CONTRACTS, TOKEN_DECIMALS } from "./crossmint";
 
 const MORALIS_API_KEY = () => process.env.MORALIS_API_KEY!;
@@ -104,7 +105,13 @@ export async function watchAddress(streamId: string, address: string): Promise<v
  */
 export function verifyWebhookSignature(rawBody: string, signature: string): boolean {
   const hash = "0x" + bytesToHex(keccak256(utf8ToBytes(rawBody + MORALIS_API_KEY())));
-  return hash.toLowerCase() === signature.toLowerCase();
+  try {
+    const a = Buffer.from(hash.toLowerCase());
+    const b = Buffer.from(signature.toLowerCase().padEnd(hash.length, "\0").slice(0, hash.length));
+    return a.length === b.length && timingSafeEqual(a, b);
+  } catch {
+    return false;
+  }
 }
 
 export interface ParsedTransfer {

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { sendStablecoin } from "@/lib/crossmint";
+import { genRef } from "@/lib/utils";
 
 export async function POST(req: NextRequest) {
   const session = await getSession();
@@ -12,6 +13,9 @@ export async function POST(req: NextRequest) {
 
     if (!fromWalletId || !toAddress || !amount || amount <= 0) {
       return NextResponse.json({ error: "Invalid send parameters" }, { status: 400 });
+    }
+    if (amount > 50_000) {
+      return NextResponse.json({ error: "Single send cannot exceed $50,000" }, { status: 400 });
     }
 
     const from = await prisma.wallet.findUnique({ where: { id: fromWalletId } });
@@ -32,7 +36,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Cannot send to your own wallet" }, { status: 400 });
     }
 
-    const ref = `SEND-${Date.now()}`;
+    const ref = genRef("SEND");
 
     if (internalWallet) {
       // ── Internal Volt-to-Volt transfer ─────────────────────────────────────

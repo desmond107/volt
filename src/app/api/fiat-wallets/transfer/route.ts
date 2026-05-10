@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { getRates, convertAmount } from "@/lib/rates";
+import { genRef } from "@/lib/utils";
 
 export async function POST(req: NextRequest) {
   const session = await getSession();
@@ -10,6 +11,9 @@ export async function POST(req: NextRequest) {
   const { fromWalletId, toWalletId, amount } = await req.json();
   if (!fromWalletId || !toWalletId || !amount || amount <= 0) {
     return NextResponse.json({ error: "Invalid parameters" }, { status: 400 });
+  }
+  if (amount > 50_000) {
+    return NextResponse.json({ error: "Single transfer cannot exceed 50,000" }, { status: 400 });
   }
 
   const [from, to] = await Promise.all([
@@ -29,7 +33,7 @@ export async function POST(req: NextRequest) {
 
   const rates = await getRates();
   const receivedAmount = convertAmount(amount, from.currency, to.currency, rates);
-  const ref = `TRF-${Date.now()}`;
+  const ref = genRef("TRF");
 
   await prisma.$transaction(async (tx) => {
     await tx.fiatWallet.update({ where: { id: fromWalletId }, data: { balance: { decrement: amount } } });

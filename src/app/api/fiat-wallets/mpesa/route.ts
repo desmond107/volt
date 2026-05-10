@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { getRates, convertAmount } from "@/lib/rates";
+import { genRef } from "@/lib/utils";
 
 export async function POST(req: NextRequest) {
   const session = await getSession();
@@ -25,7 +26,7 @@ export async function POST(req: NextRequest) {
   const rates = await getRates();
   const kesAmount = convertAmount(amount, wallet.currency, "KES", rates);
   const formattedPhone = `+254${digits.slice(-9)}`;
-  const ref = `MPESA-${Date.now()}`;
+  const ref = genRef("MPESA");
 
   await prisma.$transaction(async (tx) => {
     await tx.fiatWallet.update({

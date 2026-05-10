@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import type { Wallet } from "@prisma/client";
+import { randomBytes } from "crypto";
 
 export async function POST() {
   if (process.env.NODE_ENV === "production") {
@@ -41,7 +42,7 @@ export async function POST() {
           walletId: usdcWallet.id,
           ...t,
           fee: t.type === "CARD_PAYMENT" ? +(t.amount * 0.01).toFixed(2) : 0,
-          reference: `demo_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+          reference: `demo_${randomBytes(6).toString("hex")}`,
         },
       });
     }

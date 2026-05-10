@@ -44,6 +44,22 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Please fill in all required fields" }, { status: 400 });
     }
 
+    const fieldLimits: Record<string, [string, number]> = {
+      fullName:     [fullName,     100],
+      phone:        [phone,         20],
+      addressLine1: [addressLine1, 200],
+      addressLine2: [addressLine2 ?? "", 200],
+      city:         [city,          100],
+      state:        [state ?? "",    100],
+      postalCode:   [postalCode,     20],
+      country:      [country,        100],
+    };
+    for (const [field, [value, max]] of Object.entries(fieldLimits)) {
+      if (value.trim().length > max) {
+        return NextResponse.json({ error: `${field} must be ${max} characters or fewer` }, { status: 400 });
+      }
+    }
+
     const validColors = ["midnight", "white", "navy", "gold", "rosegold", "arctic"];
     const resolvedColor = validColors.includes(cardColor) ? cardColor : "midnight";
 

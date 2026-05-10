@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
-import { serializeDecimals } from "@/lib/utils";
+import { serializeDecimals, genRef } from "@/lib/utils";
 
 export async function POST(req: NextRequest) {
   const session = await getSession();
@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
           fee: 0,
           currency: wallet.asset,
           description,
-          reference: `DEP-${Date.now()}`,
+          reference: genRef("DEP"),
           metadata,
         },
       });

@@ -55,7 +55,8 @@ export async function POST(req: NextRequest) {
 
     const existing = await getUserByEmail(email.toLowerCase().trim());
     if (existing) {
-      return NextResponse.json({ error: "An account with this email already exists" }, { status: 409 });
+      // Return success to prevent email enumeration — client behaviour is identical either way
+      return NextResponse.json({ user: null, emailVerificationSent: true });
     }
 
     const user = await createUser(email.toLowerCase().trim(), name.trim(), password);

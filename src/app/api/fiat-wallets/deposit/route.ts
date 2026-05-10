@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
+import { genRef } from "@/lib/utils";
 
 export async function POST(req: NextRequest) {
   const session = await getSession();
@@ -33,7 +34,7 @@ export async function POST(req: NextRequest) {
         amount,
         currency: wallet.currency,
         description: `Deposited ${amount.toLocaleString()} ${wallet.currency}`,
-        reference: `DEP-${Date.now()}`,
+        reference: genRef("DEP"),
       },
     });
   });
