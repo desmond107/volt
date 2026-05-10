@@ -5,6 +5,7 @@ import { Prisma } from "@prisma/client";
 const mockSession = { id: "user-1", email: "user@example.com", name: "Test User", kycStatus: "VERIFIED", kycLevel: 1, emailVerifiedAt: null };
 
 vi.mock("@/lib/session", () => ({ getSession: vi.fn() }));
+vi.mock("@/lib/crossmint", () => ({ sendStablecoin: vi.fn() }));
 vi.mock("@/lib/prisma", () => ({
   prisma: {
     wallet: { findUnique: vi.fn(), findFirst: vi.fn(), update: vi.fn() },
@@ -22,7 +23,7 @@ function makeReq(body: object) {
 }
 
 describe("POST /api/wallet/send", () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => vi.resetAllMocks());
 
   it("returns 401 when not authenticated", async () => {
     const { getSession } = await import("@/lib/session");
@@ -64,17 +65,20 @@ describe("POST /api/wallet/send", () => {
     expect(res.status).toBe(404);
   });
 
-  it("returns 404 when recipient wallet not found", async () => {
+  it("returns 400 when sending to an external address with a legacy wallet", async () => {
     const { getSession } = await import("@/lib/session");
     const { prisma } = await import("@/lib/prisma");
     vi.mocked(getSession).mockResolvedValue(mockSession);
+    // wallet has no crossmintWalletId → on-chain send is blocked
     vi.mocked(prisma.wallet.findUnique)
-      .mockResolvedValueOnce({ id: "w1", userId: "user-1", asset: "USDC", balance: 500 } as never)
+      .mockResolvedValueOnce({ id: "w1", userId: "user-1", asset: "USDC", balance: new Prisma.Decimal(500) } as never)
       .mockResolvedValueOnce(null);
 
     const { POST } = await import("@/app/api/wallet/send/route");
     const res = await POST(makeReq({ fromWalletId: "w1", toAddress: "0xunknown", amount: 10 }));
-    expect(res.status).toBe(404);
+    expect(res.status).toBe(400);
+    const json = await res.json();
+    expect(json.error).toMatch(/on-chain/i);
   });
 
   it("returns 400 when sending to own wallet", async () => {
@@ -82,7 +86,7 @@ describe("POST /api/wallet/send", () => {
     const { prisma } = await import("@/lib/prisma");
     vi.mocked(getSession).mockResolvedValue(mockSession);
     vi.mocked(prisma.wallet.findUnique)
-      .mockResolvedValueOnce({ id: "w1", userId: "user-1", asset: "USDC", balance: 500 } as never)
+      .mockResolvedValueOnce({ id: "w1", userId: "user-1", asset: "USDC", balance: new Prisma.Decimal(500) } as never)
       .mockResolvedValueOnce({
         id: "w2", userId: "user-1", address: "0xself",
         user: { id: "user-1", name: "Test User", email: "user@example.com" },

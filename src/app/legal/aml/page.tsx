@@ -33,7 +33,7 @@ const sections = [
   },
   {
     title: "8. Contact",
-    body: `To report suspicious activity or for compliance enquiries, contact our AML team at compliance@usezpesa.com.`,
+    body: `To report suspicious activity or for compliance enquiries, contact our AML team at compliance@usevolt.com.`,
   },
 ];
 

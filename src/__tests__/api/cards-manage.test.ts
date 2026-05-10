@@ -5,6 +5,11 @@ import { Prisma } from "@prisma/client";
 const mockSession = { id: "user-1", email: "user@example.com", name: "Test User", kycStatus: "VERIFIED", kycLevel: 1, emailVerifiedAt: null };
 
 vi.mock("@/lib/session", () => ({ getSession: vi.fn() }));
+vi.mock("@/lib/card-crypto", () => ({
+  encryptCardField: vi.fn((v: string) => v),
+  decryptCardField: vi.fn((v: string) => v),
+  decryptCard: vi.fn(<T>(c: T) => c),
+}));
 vi.mock("@/lib/prisma", () => ({
   prisma: {
     virtualCard: { findUnique: vi.fn(), update: vi.fn() },

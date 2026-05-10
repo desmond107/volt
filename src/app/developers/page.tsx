@@ -81,9 +81,9 @@ const endpoints = [
 ];
 
 const sdks = [
-  { name: "Node.js", install: "npm install @zpesa/sdk", color: "bg-yellow-500" },
-  { name: "Python", install: "pip install zpesa-sdk", color: "bg-blue-500" },
-  { name: "Go", install: "go get github.com/zpesa/sdk-go", color: "bg-amber-500" },
+  { name: "Node.js", install: "npm install @volt/sdk", color: "bg-yellow-500" },
+  { name: "Python", install: "pip install volt-sdk", color: "bg-blue-500" },
+  { name: "Go", install: "go get github.com/volt/sdk-go", color: "bg-amber-500" },
 ];
 
 const methodColors: Record<string, string> = {
@@ -135,7 +135,7 @@ export default function DevelopersPage() {
                 All API requests must include your API key in the <code className="text-blue-300">Authorization</code> header as a Bearer token.
               </p>
               <pre className="bg-[#020c1b] border border-[#0d2040] rounded-lg p-4 text-sm font-mono text-emerald-300 overflow-x-auto">
-{`curl https://api.usezpesa.com/v1/cards \\
+{`curl https://api.usevolt.com/v1/cards \\
   -H "Authorization: Bearer sk_live_your_api_key_here" \\
   -H "Content-Type: application/json"`}
               </pre>
@@ -169,9 +169,9 @@ export default function DevelopersPage() {
                 </button>
               </div>
               <pre className="p-5 text-sm font-mono overflow-x-auto text-[#c0d4ef] leading-relaxed">
-{`import ZPesa from '@zpesa/sdk';
+{`import Volt from '@volt/sdk';
 
-const client = new ZPesa({
+const client = new Volt({
   apiKey: "YOUR_API_KEY",
 });
 
@@ -228,7 +228,7 @@ client.webhooks.on('card.transaction', (event) => {
             <div className="bg-[#061120] border border-[#0d2040] rounded-xl p-5">
               <p className="text-sm text-[#6b88b0] mb-4">
                 Volt sends real-time POST requests to your endpoint for all card and wallet events.
-                Verify authenticity using the <code className="text-blue-300">X-ZPesa-Signature</code> header.
+                Verify authenticity using the <code className="text-blue-300">X-Volt-Signature</code> header.
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {[

@@ -5,7 +5,7 @@ import { hashPassword } from "@/lib/auth";
 import { encryptCardField } from "@/lib/card-crypto";
 import { randomBytes } from "crypto";
 
-const DEMO_EMAIL = "demo@zpesa.com";
+const DEMO_EMAIL = "demo@usevolt.com";
 const DEMO_NAME = "Demo User";
 
 function genAddress() {
@@ -22,7 +22,7 @@ export async function POST() {
     let user = await prisma.user.findUnique({ where: { email: DEMO_EMAIL } });
 
     if (!user) {
-      const passwordHash = await hashPassword("demo-password-zpesa");
+      const passwordHash = await hashPassword("demo-password-volt");
       user = await prisma.user.create({
         data: { email: DEMO_EMAIL, name: DEMO_NAME, passwordHash, kycStatus: "VERIFIED", kycLevel: 1 },
       });

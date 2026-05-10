@@ -142,7 +142,9 @@ export default function Hero({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
     if (!el) return;
     el.src = VIDEOS[videoIndex];
     el.load();
-    void el.play();
+    el.play().catch((err: unknown) => {
+      if (err instanceof DOMException && err.name === "AbortError") return;
+    });
   }, [videoIndex]);
 
   const handleDemo = async () => {

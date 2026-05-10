@@ -3,7 +3,7 @@ import { NextRequest } from "next/server";
 
 const mockSession = { id: "user-1", email: "user@example.com", name: "Test User", kycStatus: "VERIFIED", kycLevel: 1, emailVerifiedAt: null };
 
-vi.mock("@/lib/session", () => ({ getSession: vi.fn() }));
+vi.mock("@/lib/session", () => ({ getSession: vi.fn(), clearSession: vi.fn() }));
 vi.mock("@/lib/prisma", () => ({
   prisma: {
     user: { findUnique: vi.fn(), update: vi.fn() },
@@ -116,7 +116,7 @@ describe("PATCH /api/user", () => {
     vi.mocked(prisma.user.update).mockResolvedValue({} as never);
 
     const { PATCH } = await import("@/app/api/user/route");
-    const res = await PATCH(makeReq({ currentPassword: "correct", newPassword: "newpass123" }));
+    const res = await PATCH(makeReq({ currentPassword: "correct", newPassword: "NewPass1!" }));
     expect(res.status).toBe(200);
     expect(prisma.user.update).toHaveBeenCalledWith(
       expect.objectContaining({ data: { passwordHash: "newhash" } })

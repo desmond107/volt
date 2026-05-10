@@ -9,10 +9,15 @@ vi.mock("@/lib/session", () => ({ getSession: vi.fn() }));
 vi.mock("@/lib/prisma", () => ({
   prisma: {
     virtualCard: { findMany: vi.fn(), findUnique: vi.fn(), create: vi.fn(), update: vi.fn() },
-    transaction: { create: vi.fn() },
+    transaction: { create: vi.fn(), aggregate: vi.fn().mockResolvedValue({ _sum: { amount: null } }) },
     wallet: { update: vi.fn() },
     $transaction: vi.fn(),
   },
+}));
+vi.mock("@/lib/card-crypto", () => ({
+  encryptCardField: vi.fn((v: string) => v),
+  decryptCardField: vi.fn((v: string) => v),
+  decryptCard: vi.fn(<T>(c: T) => c),
 }));
 vi.mock("@/lib/utils", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/utils")>();

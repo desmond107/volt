@@ -22,7 +22,7 @@ We also collect certain information automatically, including IP address, device 
   },
   {
     title: "5. Your Rights",
-    body: `You have the right to access, correct, or delete your personal data, subject to legal and regulatory requirements. You may also request data portability or object to certain processing. To exercise these rights, contact us at privacy@usezpesa.com.`,
+    body: `You have the right to access, correct, or delete your personal data, subject to legal and regulatory requirements. You may also request data portability or object to certain processing. To exercise these rights, contact us at privacy@usevolt.com.`,
   },
   {
     title: "6. Security",
@@ -30,7 +30,7 @@ We also collect certain information automatically, including IP address, device 
   },
   {
     title: "7. Contact",
-    body: `For privacy-related questions or to exercise your rights, contact our Data Protection Officer at privacy@usezpesa.com or write to us at Volt Digital Cards Technologies, Nairobi, Kenya.`,
+    body: `For privacy-related questions or to exercise your rights, contact our Data Protection Officer at privacy@usevolt.com or write to us at Volt Digital Cards Technologies, Nairobi, Kenya.`,
   },
 ];
 

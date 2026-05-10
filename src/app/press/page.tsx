@@ -22,7 +22,7 @@ export default function PressPage() {
                 ["Focus", "Stablecoin-powered Visa virtual cards"],
                 ["Supported assets", "USDC, USDT, DAI"],
                 ["Networks", "Ethereum, Base, BSC, Polygon"],
-                ["Contact", "press@usezpesa.com"],
+                ["Contact", "press@usevolt.com"],
               ].map(([k, v]) => (
                 <div key={k} className="flex justify-between">
                   <dt className="text-[#6b88b0]">{k}</dt>
@@ -53,8 +53,8 @@ export default function PressPage() {
           <p className="text-xs text-[#6b88b0] mb-3">
             For interviews, product demos, or press coverage, reach out to our communications team.
           </p>
-          <a href="mailto:press@usezpesa.com" className="text-sm text-blue-400 hover:text-blue-300 font-medium transition-colors">
-            press@usezpesa.com →
+          <a href="mailto:press@usevolt.com" className="text-sm text-blue-400 hover:text-blue-300 font-medium transition-colors">
+            press@usevolt.com →
           </a>
         </div>
       </main>

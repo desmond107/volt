@@ -48,7 +48,7 @@ export default function CookiesPage() {
           <div>
             <h2 className="text-sm font-semibold text-white mb-3">Managing cookies</h2>
             <p className="text-sm text-[#6b88b0] leading-relaxed">
-              You can control cookies through your browser settings. Disabling essential cookies will prevent you from using certain features of Volt. For more information, contact privacy@usezpesa.com.
+              You can control cookies through your browser settings. Disabling essential cookies will prevent you from using certain features of Volt. For more information, contact privacy@usevolt.com.
             </p>
           </div>
         </div>

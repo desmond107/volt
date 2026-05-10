@@ -187,13 +187,13 @@ describe("POST /api/auth/signup", () => {
     expect(json.error).toMatch(/8 characters/i);
   });
 
-  it("returns 409 when email already exists", async () => {
+  it("returns 200 when email already exists (email enumeration prevention)", async () => {
     const { prisma } = await import("@/lib/prisma");
     vi.mocked(prisma.user.findUnique).mockResolvedValue({ id: "1" } as never);
 
     const { POST } = await import("@/app/api/auth/signup/route");
-    const res = await POST(makeRequest({ email: "exists@example.com", name: "A", password: "password123" }));
-    expect(res.status).toBe(409);
+    const res = await POST(makeRequest({ email: "exists@example.com", name: "A", password: "Password1!" }));
+    expect(res.status).toBe(200);
   });
 
   it("returns 200 and creates user on success", async () => {
@@ -206,7 +206,7 @@ describe("POST /api/auth/signup", () => {
     vi.mocked(prisma.wallet.createMany).mockResolvedValue({ count: 3 });
 
     const { POST } = await import("@/app/api/auth/signup/route");
-    const res = await POST(makeRequest({ email: "new@example.com", name: "New User", password: "password123" }));
+    const res = await POST(makeRequest({ email: "new@example.com", name: "New User", password: "Password1!" }));
     expect(res.status).toBe(200);
     const json = await res.json();
     expect(json.user.email).toBe("new@example.com");

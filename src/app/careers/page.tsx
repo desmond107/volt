@@ -47,10 +47,10 @@ export default function CareersPage() {
           <h2 className="text-lg font-bold text-white mb-2">Don&apos;t see your role?</h2>
           <p className="text-sm text-[#6b88b0] mb-4">We&apos;re always open to talented people who care about our mission.</p>
           <a
-            href="mailto:careers@usezpesa.com"
+            href="mailto:careers@usevolt.com"
             className="text-sm text-blue-400 hover:text-blue-300 transition-colors font-medium"
           >
-            careers@usezpesa.com →
+            careers@usevolt.com →
           </a>
         </div>
       </main>

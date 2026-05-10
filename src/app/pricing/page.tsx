@@ -54,7 +54,7 @@ const plans = [
     period: "/month",
     desc: "For businesses and developers building on top of Volt",
     cta: "Contact Sales",
-    href: "mailto:sales@usezpesa.com",
+    href: "mailto:sales@usevolt.com",
     highlight: false,
     features: [
       { text: "Unlimited virtual cards", included: true },
