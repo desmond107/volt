@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import TopBar from "@/components/dashboard/TopBar";
 import { Key, Plus, Trash2, Copy, CheckCircle2, Eye, EyeOff } from "lucide-react";
 import Button from "@/components/ui/Button";
@@ -15,6 +16,7 @@ interface ApiKey {
 }
 
 export default function SettingsPage() {
+  const router = useRouter();
   const [user, setUser] = useState<{ name: string; email: string } | null>(null);
   const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
   const [loading, setLoading] = useState(true);
@@ -70,10 +72,14 @@ export default function SettingsPage() {
       body: JSON.stringify({ currentPassword: currentPwd, newPassword: newPwd }),
     });
     const data = await res.json();
-    setPwdMsg(res.ok ? "Password updated!" : (data.error ?? "Failed to update."));
-    if (res.ok) { setCurrentPwd(""); setNewPwd(""); }
-    setSavingPwd(false);
-    setTimeout(() => setPwdMsg(""), 4000);
+    if (res.ok) {
+      setPwdMsg("Password updated! Signing you out…");
+      setTimeout(() => router.push("/auth/login"), 1500);
+    } else {
+      setPwdMsg(data.error ?? "Failed to update.");
+      setSavingPwd(false);
+      setTimeout(() => setPwdMsg(""), 4000);
+    }
   };
 
   useEffect(() => {
@@ -172,7 +178,7 @@ export default function SettingsPage() {
               <p className="text-xs text-emerald-400 font-semibold mb-2">New API key created — copy it now, it won&apos;t be shown again</p>
               <div className="flex items-center gap-2 bg-[#020c1b] border border-[#0d2040] rounded-lg p-2.5">
                 <code className="text-xs font-mono text-white flex-1 break-all">{newKeySecret}</code>
-                <button onClick={() => handleCopy(newKeySecret, "secret")} className="text-[#6b88b0] hover:text-white ml-2 flex-shrink-0">
+                <button onClick={() => handleCopy(newKeySecret, "secret")} className="text-[#6b88b0] hover:text-white ml-2 shrink-0">
                   {copied === "secret" ? <CheckCircle2 className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
                 </button>
               </div>
@@ -217,7 +223,7 @@ export default function SettingsPage() {
                   className="flex items-center justify-between bg-[#020c1b] border border-[#0d2040] rounded-lg p-3"
                 >
                   <div className="flex items-center gap-3">
-                    <Key className="w-4 h-4 text-blue-400 flex-shrink-0" />
+                    <Key className="w-4 h-4 text-blue-400 shrink-0" />
                     <div>
                       <div className="text-sm font-medium text-white">{k.name}</div>
                       <div className="flex items-center gap-2 mt-0.5">

@@ -172,7 +172,7 @@ export default function DevelopersPage() {
 {`import ZPesa from '@zpesa/sdk';
 
 const client = new ZPesa({
-  apiKey: process.env.ZPESA_API_KEY,
+  apiKey: "YOUR_API_KEY",
 });
 
 // Issue a virtual card

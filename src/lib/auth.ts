@@ -32,6 +32,6 @@ export async function createUser(email: string, name: string, password: string) 
 }
 
 function genAddress() {
-  const chars = "0123456789abcdef";
-  return "0x" + Array.from({ length: 40 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
+  const { randomBytes } = require("crypto") as typeof import("crypto");
+  return "0x" + randomBytes(20).toString("hex");
 }

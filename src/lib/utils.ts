@@ -60,19 +60,21 @@ export function maskCardNumber(cardNumber: string) {
 }
 
 export function generateCardNumber() {
+  const { randomInt } = require("crypto") as typeof import("crypto");
   const groups = Array.from({ length: 4 }, () =>
-    Math.floor(1000 + Math.random() * 9000).toString()
+    randomInt(1000, 10000).toString()
   );
   return groups.join("");
 }
 
 export function generateCVV() {
-  return Math.floor(100 + Math.random() * 900).toString();
+  const { randomInt } = require("crypto") as typeof import("crypto");
+  return randomInt(100, 1000).toString();
 }
 
 export function generateWalletAddress() {
-  const chars = "0123456789abcdef";
-  return "0x" + Array.from({ length: 40 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
+  const { randomBytes } = require("crypto") as typeof import("crypto");
+  return "0x" + randomBytes(20).toString("hex");
 }
 
 export function truncateAddress(address: string) {

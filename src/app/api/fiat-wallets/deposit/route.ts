@@ -6,9 +6,13 @@ export async function POST(req: NextRequest) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  const MAX_DEPOSIT = 50_000;
   const { walletId, amount } = await req.json();
   if (!walletId || !amount || amount <= 0) {
     return NextResponse.json({ error: "Invalid parameters" }, { status: 400 });
+  }
+  if (amount > MAX_DEPOSIT) {
+    return NextResponse.json({ error: `Single deposit cannot exceed ${MAX_DEPOSIT.toLocaleString()}` }, { status: 400 });
   }
 
   const wallet = await prisma.fiatWallet.findUnique({ where: { id: walletId } });
