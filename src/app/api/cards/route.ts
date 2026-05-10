@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { generateCardNumber, generateCVV, serializeDecimals } from "@/lib/utils";
+import { encryptCardField, decryptCard } from "@/lib/card-crypto";
 
 export async function GET() {
   const session = await getSession();
@@ -16,7 +17,7 @@ export async function GET() {
     },
   });
 
-  return NextResponse.json({ cards: serializeDecimals(cards) });
+  return NextResponse.json({ cards: serializeDecimals(cards).map(decryptCard) });
 }
 
 export async function POST(req: NextRequest) {
@@ -44,11 +45,14 @@ export async function POST(req: NextRequest) {
     const expiryYear = now.getFullYear() + 3;
     const expiryMonth = now.getMonth() + 1;
 
+    const rawCardNumber = generateCardNumber();
+    const rawCvv = generateCVV();
+
     const card = await prisma.virtualCard.create({
       data: {
         userId: session.id,
-        cardNumber: generateCardNumber(),
-        cvv: generateCVV(),
+        cardNumber: encryptCardField(rawCardNumber),
+        cvv: encryptCardField(rawCvv),
         expiryMonth,
         expiryYear,
         cardHolder: session.name ?? "STERLING USER",
@@ -61,7 +65,8 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    return NextResponse.json({ card: serializeDecimals(card) });
+    // Return the decrypted values so the client sees the plain card number/CVV once
+    return NextResponse.json({ card: decryptCard(serializeDecimals(card)) });
   } catch {
     return NextResponse.json({ error: "Failed to create card" }, { status: 500 });
   }

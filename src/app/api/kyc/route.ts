@@ -25,6 +25,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Document type and country are required" }, { status: 400 });
     }
 
+    // In production, submissions go to PENDING for human review.
+    // In development, auto-approve so the demo flow works end-to-end.
+    const isProd = process.env.NODE_ENV === "production";
+    const newKycStatus = isProd ? "PENDING" : "VERIFIED";
+
     await prisma.$transaction(async (tx) => {
       await tx.kycDocument.create({
         data: {
@@ -37,11 +42,20 @@ export async function POST(req: NextRequest) {
       });
       await tx.user.update({
         where: { id: session.id },
-        data: { kycStatus: "VERIFIED", kycLevel: 1 },
+        data: {
+          kycStatus: newKycStatus,
+          ...(isProd ? {} : { kycLevel: 1 }),
+        },
       });
     });
 
-    return NextResponse.json({ success: true, kycStatus: "VERIFIED" });
+    return NextResponse.json({
+      success: true,
+      kycStatus: newKycStatus,
+      message: isProd
+        ? "Your documents have been submitted and are pending review."
+        : "Verified",
+    });
   } catch {
     return NextResponse.json({ error: "KYC submission failed" }, { status: 500 });
   }

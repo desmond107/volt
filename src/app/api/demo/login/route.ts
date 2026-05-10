@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { setSession } from "@/lib/session";
 import { hashPassword } from "@/lib/auth";
+import { encryptCardField } from "@/lib/card-crypto";
 
 const DEMO_EMAIL = "demo@zpesa.com";
 const DEMO_NAME = "Demo User";
@@ -12,6 +13,11 @@ function genAddress() {
 }
 
 export async function POST() {
+  // Block in production — demo accounts must not exist on live deployments
+  if (process.env.NODE_ENV === "production") {
+    return NextResponse.json({ error: "Not available in production" }, { status: 403 });
+  }
+
   try {
     let user = await prisma.user.findUnique({ where: { email: DEMO_EMAIL } });
 
@@ -63,8 +69,8 @@ export async function POST() {
       await prisma.virtualCard.create({
         data: {
           userId: user.id,
-          cardNumber: "4111111111114921",
-          cvv: "392",
+          cardNumber: encryptCardField("4111111111114921"),
+          cvv: encryptCardField("392"),
           expiryMonth: now.getMonth() + 1,
           expiryYear: now.getFullYear() + 3,
           cardHolder: DEMO_NAME,

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { serializeDecimals } from "@/lib/utils";
+import { decryptCard } from "@/lib/card-crypto";
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await getSession();
@@ -35,7 +36,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       prisma.fiatTransaction.count({ where: { userId: session.id, walletId: card.fiatWalletId } }),
     ]);
     return NextResponse.json({
-      card: serializeDecimals(card),
+      card: decryptCard(serializeDecimals(card)),
       transactions: serializeDecimals(txns),
       total,
       page,
@@ -56,7 +57,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   ]);
 
   return NextResponse.json({
-    card: serializeDecimals(card),
+    card: decryptCard(serializeDecimals(card)),
     transactions: serializeDecimals(txns),
     total,
     page,
