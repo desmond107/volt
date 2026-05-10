@@ -53,7 +53,7 @@ export default function AboutPage() {
 
         <div className="text-center bg-[#061120] border border-[#0d2040] rounded-2xl p-8">
           <h2 className="text-xl font-bold text-white mb-3">Get in touch</h2>
-          <p className="text-sm text-[#6b88b0] mb-2">contact@usezpesa.com</p>
+          <p className="text-sm text-[#6b88b0] mb-2">contact@usevolt.com</p>
           <p className="text-xs text-[#6b88b0]">We&apos;re based in Nairobi, Kenya — building for the world.</p>
         </div>
       </main>

@@ -50,7 +50,7 @@ export default function Footer() {
               Simple, secure, borderless payments powered by stablecoins.
             </p>
             <p className="text-xs text-[#6b88b0]">
-              contact@usezpesa.com
+              contact@usevolt.com
             </p>
           </div>
 
