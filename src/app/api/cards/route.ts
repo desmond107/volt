@@ -28,6 +28,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "KYC verification required to issue cards" }, { status: 403 });
   }
 
+  if (process.env.NODE_ENV === "production" && !session.emailVerifiedAt) {
+    return NextResponse.json({ error: "Email verification required to issue cards" }, { status: 403 });
+  }
+
   try {
     const { label, spendLimit, color, currency, brand, fiatWalletId } = await req.json();
 

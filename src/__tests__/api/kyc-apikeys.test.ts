@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
 
-const mockSession = { id: "user-1", email: "user@example.com", name: "Test User", kycStatus: "PENDING", kycLevel: 0 };
+const mockSession = { id: "user-1", email: "user@example.com", name: "Test User", kycStatus: "PENDING", kycLevel: 0, emailVerifiedAt: null };
 
 vi.mock("@/lib/session", () => ({ getSession: vi.fn() }));
 vi.mock("@/lib/prisma", () => ({
@@ -142,7 +142,7 @@ describe("POST /api/apikeys", () => {
     const { getSession } = await import("@/lib/session");
     const { prisma } = await import("@/lib/prisma");
     vi.mocked(getSession).mockResolvedValue(mockSession);
-    vi.mocked(prisma.apiKey.create).mockImplementation(async ({ data }) => ({ id: "k1", ...data } as never));
+    vi.mocked(prisma.apiKey.create).mockImplementation(({ data }: any) => Promise.resolve({ id: "k1", ...data }) as any);
 
     const { POST } = await import("@/app/api/apikeys/route");
     const res = await POST(makeReq({ name: "My Key", permissions: "read" }));
@@ -156,7 +156,7 @@ describe("POST /api/apikeys", () => {
     const { getSession } = await import("@/lib/session");
     const { prisma } = await import("@/lib/prisma");
     vi.mocked(getSession).mockResolvedValue(mockSession);
-    vi.mocked(prisma.apiKey.create).mockImplementation(async ({ data }) => ({ id: "k1", ...data } as never));
+    vi.mocked(prisma.apiKey.create).mockImplementation(({ data }: any) => Promise.resolve({ id: "k1", ...data }) as any);
 
     const { POST } = await import("@/app/api/apikeys/route");
     await POST(makeReq({}));

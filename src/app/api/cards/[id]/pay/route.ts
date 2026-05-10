@@ -14,6 +14,25 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       return NextResponse.json({ error: "Invalid amount" }, { status: 400 });
     }
 
+    const MAX_SINGLE_PAYMENT = 10_000;
+    if (amount > MAX_SINGLE_PAYMENT) {
+      return NextResponse.json({ error: `Single payment cannot exceed $${MAX_SINGLE_PAYMENT.toLocaleString()}` }, { status: 400 });
+    }
+
+    // Daily velocity: sum of today's card payments for this user
+    const dayStart = new Date();
+    dayStart.setHours(0, 0, 0, 0);
+    const DAILY_LIMIT = 25_000;
+    const dailyAggregate = await prisma.transaction.aggregate({
+      where: { userId: session.id, type: "CARD_PAYMENT", createdAt: { gte: dayStart } },
+      _sum: { amount: true },
+    });
+    const dailySpent = dailyAggregate._sum.amount?.toNumber() ?? 0;
+    if (dailySpent + amount > DAILY_LIMIT) {
+      const remaining = Math.max(0, DAILY_LIMIT - dailySpent);
+      return NextResponse.json({ error: `Daily card payment limit reached (remaining today: $${remaining.toFixed(2)})` }, { status: 400 });
+    }
+
     let card = await prisma.virtualCard.findUnique({
       where: { id },
       include: { fiatWallet: true },

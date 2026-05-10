@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
 import { Prisma } from "@prisma/client";
 
-const mockSession = { id: "user-1", email: "user@example.com", name: "Card User", kycStatus: "VERIFIED", kycLevel: 1 };
+const mockSession = { id: "user-1", email: "user@example.com", name: "Card User", kycStatus: "VERIFIED", kycLevel: 1, emailVerifiedAt: null };
 const unverifiedSession = { ...mockSession, kycStatus: "PENDING" };
 
 vi.mock("@/lib/session", () => ({ getSession: vi.fn() }));

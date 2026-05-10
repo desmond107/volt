@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession, clearSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { verifyPassword, hashPassword } from "@/lib/auth";
+import { validatePassword } from "@/lib/password";
 
 export async function GET() {
   const session = await getSession();
@@ -31,9 +32,8 @@ export async function PATCH(req: NextRequest) {
       if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 });
       const valid = await verifyPassword(currentPassword ?? "", user.passwordHash);
       if (!valid) return NextResponse.json({ error: "Current password is incorrect" }, { status: 400 });
-      if (newPassword.length < 8) {
-        return NextResponse.json({ error: "Password must be at least 8 characters" }, { status: 400 });
-      }
+      const pwdError = validatePassword(newPassword);
+      if (pwdError) return NextResponse.json({ error: pwdError }, { status: 400 });
       await prisma.user.update({
         where: { id: session.id },
         data: { passwordHash: await hashPassword(newPassword) },
@@ -44,7 +44,13 @@ export async function PATCH(req: NextRequest) {
     }
 
     if (name !== undefined) {
-      await prisma.user.update({ where: { id: session.id }, data: { name } });
+      if (typeof name !== "string" || name.trim().length === 0) {
+        return NextResponse.json({ error: "Name cannot be empty" }, { status: 400 });
+      }
+      if (name.trim().length > 100) {
+        return NextResponse.json({ error: "Name must be 100 characters or fewer" }, { status: 400 });
+      }
+      await prisma.user.update({ where: { id: session.id }, data: { name: name.trim() } });
       return NextResponse.json({ ok: true });
     }
 

@@ -85,9 +85,10 @@ describe("createUser", () => {
     expect(prisma.user.create).toHaveBeenCalledOnce();
     expect(prisma.wallet.createMany).toHaveBeenCalledOnce();
 
-    const walletCall = vi.mocked(prisma.wallet.createMany).mock.calls[0][0];
-    expect(walletCall.data).toHaveLength(3);
-    const assets = walletCall.data.map((w: { asset: string }) => w.asset);
+    const walletCall = vi.mocked(prisma.wallet.createMany).mock.calls[0]?.[0];
+    const data = Array.isArray(walletCall?.data) ? walletCall.data : [];
+    expect(data).toHaveLength(3);
+    const assets = data.map((w: { asset: string }) => w.asset);
     expect(assets).toContain("USDC");
     expect(assets).toContain("USDT");
     expect(assets).toContain("DAI");

@@ -8,6 +8,7 @@ export interface SessionUser {
   name: string | null;
   kycStatus: string;
   kycLevel: number;
+  emailVerifiedAt: Date | null;
 }
 
 function getSecret() {
@@ -28,7 +29,7 @@ export async function getSession(): Promise<SessionUser | null> {
 
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { id: true, email: true, name: true, kycStatus: true, kycLevel: true },
+      select: { id: true, email: true, name: true, kycStatus: true, kycLevel: true, emailVerifiedAt: true },
     });
 
     return user;

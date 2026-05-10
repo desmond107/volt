@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
 
-const mockSession = { id: "user-1", email: "user@example.com", name: "Test User", kycStatus: "VERIFIED", kycLevel: 1 };
+const mockSession = { id: "user-1", email: "user@example.com", name: "Test User", kycStatus: "VERIFIED", kycLevel: 1, emailVerifiedAt: null };
 
 vi.mock("@/lib/session", () => ({ getSession: vi.fn() }));
 vi.mock("@/lib/prisma", () => ({
@@ -71,8 +71,8 @@ describe("GET /api/transactions", () => {
     const { GET } = await import("@/app/api/transactions/route");
     await GET(makeReq("?type=ALL"));
 
-    const callArgs = vi.mocked(prisma.transaction.findMany).mock.calls[0][0];
-    expect(callArgs.where).not.toHaveProperty("type");
+    const callArgs = vi.mocked(prisma.transaction.findMany).mock.calls[0]?.[0];
+    expect(callArgs?.where).not.toHaveProperty("type");
   });
 
   it("handles invalid page param gracefully", async () => {

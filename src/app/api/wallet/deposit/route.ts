@@ -8,7 +8,7 @@ export async function POST(req: NextRequest) {
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   try {
-    const MAX_DEPOSIT = 50_000;
+    const MAX_DEPOSIT = 200_000;
     const { walletId, amount, paymentMethod, cardBrand, cardLast4, mpesaPhone } = await req.json();
     if (!walletId || !amount || amount <= 0) {
       return NextResponse.json({ error: "Invalid deposit parameters" }, { status: 400 });

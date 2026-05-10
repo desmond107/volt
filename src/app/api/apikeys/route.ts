@@ -7,9 +7,14 @@ export async function GET() {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  const now = new Date();
   const keys = await prisma.apiKey.findMany({
-    where: { userId: session.id, isActive: true },
-    select: { id: true, name: true, key: true, permissions: true, lastUsed: true, createdAt: true },
+    where: {
+      userId: session.id,
+      isActive: true,
+      OR: [{ expiresAt: null }, { expiresAt: { gt: now } }],
+    },
+    select: { id: true, name: true, key: true, permissions: true, lastUsed: true, createdAt: true, expiresAt: true },
     orderBy: { createdAt: "desc" },
   });
 
@@ -26,6 +31,7 @@ export async function POST(req: NextRequest) {
     const key = "sk_live_" + crypto.randomBytes(24).toString("hex");
     const secret = crypto.randomBytes(32).toString("hex");
 
+    const expiresAt = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000);
     const apiKey = await prisma.apiKey.create({
       data: {
         userId: session.id,
@@ -33,6 +39,7 @@ export async function POST(req: NextRequest) {
         key,
         secret,
         permissions: permissions || "read",
+        expiresAt,
       },
     });
 
