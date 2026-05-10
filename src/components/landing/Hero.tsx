@@ -6,6 +6,8 @@ import { ArrowRight, Shield, Globe, ChevronLeft, ChevronRight, Zap } from "lucid
 import Button from "@/components/ui/Button";
 import EagleLogo from "@/components/ui/EagleLogo";
 
+const VIDEOS = ["/volt-vid2.mp4", "/volt-vid3.mp4", "/volt-video.mp4"];
+
 
 const cards = [
   {
@@ -128,6 +130,21 @@ export default function Hero({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
   const [demoLoading, setDemoLoading] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  const [videoIndex, setVideoIndex] = useState(0);
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  const handleVideoEnded = useCallback(() => {
+    setVideoIndex((i) => (i + 1) % VIDEOS.length);
+  }, []);
+
+  useEffect(() => {
+    const el = videoRef.current;
+    if (!el) return;
+    el.src = VIDEOS[videoIndex];
+    el.load();
+    void el.play();
+  }, [videoIndex]);
+
   const handleDemo = async () => {
     setDemoLoading(true);
     try {
@@ -159,16 +176,17 @@ export default function Hero({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
 
   return (
     <section className="relative min-h-screen flex items-center overflow-hidden pt-16">
-      {/* Video background */}
+      {/* Video carousel background */}
       <video
+        ref={videoRef}
         autoPlay
         muted
-        loop
         playsInline
+        onEnded={handleVideoEnded}
         className="absolute inset-0 w-full h-full object-cover pointer-events-none"
         style={{ opacity: 1 }}
       >
-        <source src="/volt-video.mp4" type="video/mp4" />
+        <source src={VIDEOS[0]} type="video/mp4" />
       </video>
       {/* Dark overlay to keep text readable */}
       <div className="absolute inset-0 bg-[#020d1a]/70 pointer-events-none" />
