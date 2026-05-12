@@ -34,7 +34,7 @@ export default function Navbar({ isLoggedIn = false }: { isLoggedIn?: boolean })
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2.5">
-            <EagleLogo size={40} />
+            <EagleLogo size={60} />
             <div className="flex flex-col leading-none">
               <span className="font-bold text-base tracking-tight text-white">Volt</span>
               <span className="text-[9px] text-[#c9943a] uppercase tracking-[0.15em] font-semibold">Digital Cards</span>

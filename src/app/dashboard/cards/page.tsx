@@ -524,6 +524,11 @@ export default function CardsPage() {
     oneTimeUse: false,
   });
 
+  const [previewExpiry] = useState(() => {
+    const d = new Date();
+    return { month: d.getMonth() + 1, year: d.getFullYear() + 3 };
+  });
+
   const fetchCards = useCallback(async () => {
     const res = await fetch("/api/cards");
     if (res.ok) {
@@ -1163,8 +1168,8 @@ export default function CardsPage() {
                   label={newCard.label || "Digital Card"}
                   cardHolder="CARD HOLDER"
                   cardNumber="0000000000000000"
-                  expiryMonth={new Date().getMonth() + 1}
-                  expiryYear={new Date().getFullYear() + 3}
+                  expiryMonth={previewExpiry.month}
+                  expiryYear={previewExpiry.year}
                   status="ACTIVE"
                   brand={newCard.brand}
                   nfcEnabled

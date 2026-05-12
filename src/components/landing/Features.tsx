@@ -8,6 +8,7 @@ import {
   RefreshCw,
   Bell,
 } from "lucide-react";
+import ClientEagleLogo from "@/components/ui/ClientEagleLogo";
 
 const features = [
   {
@@ -81,6 +82,15 @@ export default function Features() {
     <section id="features" className="py-24 relative">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
+          <div className="flex justify-center mb-6">
+            <div className="flex items-center gap-3">
+              <ClientEagleLogo size={64} />
+              <div className="flex flex-col leading-none text-left">
+                <span className="font-bold text-white text-2xl tracking-tight">Volt</span>
+                <span className="text-[10px] text-[#c9943a] uppercase tracking-[0.15em] font-semibold mt-0.5">Digital Cards</span>
+              </div>
+            </div>
+          </div>
           <div className="inline-flex items-center gap-2 bg-blue-600/10 border border-blue-600/20 rounded-full px-3 py-1 text-xs text-blue-300 mb-4">
             Everything you need
           </div>

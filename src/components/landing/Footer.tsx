@@ -40,7 +40,7 @@ export default function Footer() {
           {/* Brand */}
           <div className="col-span-2 md:col-span-1">
             <Link href="/" className="flex items-center gap-2.5 mb-4">
-              <EagleLogo size={40} />
+              <EagleLogo size={60} />
               <div className="flex flex-col leading-none">
                 <span className="font-bold text-white text-sm">Volt</span>
                 <span className="text-[8px] text-[#c9943a] uppercase tracking-[0.12em] font-semibold">Digital Cards</span>

@@ -78,7 +78,7 @@ function SidebarContent({
       <div className="flex items-center justify-between h-16 px-4 border-b border-[#0d2040]">
         {!collapsed && (
           <Link href="/" className="flex items-center gap-2" onClick={handleNavClick}>
-            <EagleLogo size={36} />
+            <EagleLogo size={56} />
             <div className="flex flex-col leading-none">
               <span className="text-sm font-bold text-white">Volt</span>
               <span className="text-[8px] text-[#c9943a] uppercase tracking-[0.12em] font-semibold">Digital Cards</span>
@@ -87,7 +87,7 @@ function SidebarContent({
         )}
         {collapsed && (
           <div className="flex items-center justify-center mx-auto">
-            <EagleLogo size={32} />
+            <EagleLogo size={48} />
           </div>
         )}
         <button

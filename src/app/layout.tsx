@@ -32,10 +32,6 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" data-scroll-behavior="smooth" suppressHydrationWarning className={`${geistSans.variable} ${geistMono.variable} h-full`}>
-      <head>
-        {/* Apply saved theme before first paint to avoid flash */}
-        <script dangerouslySetInnerHTML={{ __html: `(function(){try{var t=localStorage.getItem('volt-theme');if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}})();` }} />
-      </head>
       <body className="min-h-full bg-[#020c1b] text-[#e8eef8] antialiased">
         <ThemeProvider>{children}</ThemeProvider>
       </body>

@@ -66,7 +66,7 @@ export default function LoginPage() {
         {/* Logo */}
         <div className="text-center mb-8">
           <Link href="/" className="inline-flex items-center gap-2.5 mb-6">
-            <EagleLogo size={52} />
+            <EagleLogo size={80} />
             <div className="flex flex-col leading-none text-left">
               <span className="text-xl font-bold text-white">Volt</span>
               <span className="text-[9px] text-[#c9943a] uppercase tracking-[0.15em] font-semibold">Digital Cards</span>
