@@ -216,7 +216,7 @@ export default function Hero({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
         <source src={VIDEOS[0]} type="video/mp4" />
       </video>
       {/* Dark overlay to keep text readable */}
-      <div className="absolute inset-0 bg-[#020d1a]/70 pointer-events-none" />
+      <div className="absolute inset-0 bg-[#020d1a]/55 pointer-events-none" />
 
       {/* Background */}
       <div
