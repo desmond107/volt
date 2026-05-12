@@ -4,6 +4,7 @@ import TopBar from "@/components/dashboard/TopBar";
 import DismissibleKycBanner from "@/components/dashboard/DismissibleKycBanner";
 import Sparkline from "@/components/ui/Sparkline";
 import Link from "next/link";
+import Button from "@/components/ui/Button";
 import { formatCurrency, formatDateTime, getTransactionColor } from "@/lib/utils";
 import { FALLBACK_RATES, CURRENCY_SYMBOLS } from "@/lib/rates";
 import {

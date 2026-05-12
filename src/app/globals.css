@@ -139,7 +139,7 @@ input::placeholder, textarea::placeholder {
   color: #2d4a6e;
 }
 
-/* ── Light theme ──────────────────────────────────────────────────────────── */
+/* ── Light theme (element-selector rules only — class overrides injected via JS) ── */
 [data-theme="light"] {
   --background: #f0f5fb;
   --foreground: #0f1c2e;
@@ -165,61 +165,6 @@ input::placeholder, textarea::placeholder {
 }
 [data-theme="light"] input::placeholder,
 [data-theme="light"] textarea::placeholder { color: #8aa0b8; }
-
-/* Structural backgrounds */
-[data-theme="light"] .bg-\[#020c1b\]     { background-color: #f0f5fb !important; }
-[data-theme="light"] .bg-\[#040f1c\]     { background-color: #f4f8fd !important; }
-[data-theme="light"] .bg-\[#061120\]     { background-color: #ffffff !important; }
-[data-theme="light"] .bg-\[#020d1a\]     { background-color: #f0f5fb !important; }
-[data-theme="light"] .bg-\[#0d2040\]     { background-color: #dce8f5 !important; }
-[data-theme="light"] .bg-\[#0a1628\]     { background-color: #e8f0fa !important; }
-[data-theme="light"] .bg-\[#071530\]     { background-color: #eef5ff !important; }
-[data-theme="light"] .bg-\[#020c1b\]\/70 { background-color: rgba(240,245,251,0.7) !important; }
-[data-theme="light"] .bg-\[#0d2040\]\/30 { background-color: rgba(220,232,245,0.3) !important; }
-
-/* Hover backgrounds */
-[data-theme="light"] .hover\:bg-\[#0d2040\]:hover     { background-color: #dce8f5 !important; }
-[data-theme="light"] .hover\:bg-\[#071530\]:hover     { background-color: #eef5ff !important; }
-[data-theme="light"] .hover\:bg-\[#0d2040\]\/30:hover { background-color: rgba(220,232,245,0.3) !important; }
-
-/* Borders */
-[data-theme="light"] .border-\[#0d2040\]       { border-color: #c8d9ee !important; }
-[data-theme="light"] .border-\[#061120\]       { border-color: #e0eaf5 !important; }
-[data-theme="light"] .border-\[#0d2040\]\/20   { border-color: rgba(200,217,238,0.2) !important; }
-[data-theme="light"] .border-\[#0d2040\]\/30   { border-color: rgba(200,217,238,0.3) !important; }
-
-/* Muted / secondary text */
-[data-theme="light"] .text-\[#6b88b0\]     { color: #4a6280 !important; }
-[data-theme="light"] .text-\[#c0d4ef\]     { color: #1a3050 !important; }
-[data-theme="light"] .text-\[#4a6080\]     { color: #6a8298 !important; }
-[data-theme="light"] .text-\[#6b88b0\]\/60 { color: rgba(74,98,128,0.6) !important; }
-
-/* Primary text: white → dark in structural contexts */
-[data-theme="light"] .text-white { color: #0f1c2e !important; }
-
-/* Restore white text inside inline-styled dark elements (virtual card faces, etc.) */
-[data-theme="light"] [style*="background:"] .text-white,
-[data-theme="light"] [style*="background:"] .text-white\/40,
-[data-theme="light"] [style*="background:"] .text-white\/50 { color: inherit !important; }
-[data-theme="light"] [style*="linear-gradient"] * { color: inherit; }
-
-/* Restore white text inside explicitly coloured Tailwind bg elements */
-[data-theme="light"] .bg-blue-600 .text-white,
-[data-theme="light"] .bg-blue-500 .text-white,
-[data-theme="light"] .bg-blue-700 .text-white,
-[data-theme="light"] [class*="bg-blue-"] .text-white  { color: white !important; }
-
-/* Light gradient overrides for dashboard summary cards */
-[data-theme="light"] .from-blue-950\/50 { --tw-gradient-from: rgba(219,234,254,0.5) !important; }
-[data-theme="light"] .via-\[#061120\]   { --tw-gradient-via: #f8faff !important; }
-[data-theme="light"] .to-\[#061120\]    { --tw-gradient-to: #f8faff !important; }
-
-/* Legacy utility classes */
-[data-theme="light"] .theme-bg     { background-color: var(--background) !important; }
-[data-theme="light"] .theme-card   { background-color: var(--card) !important; }
-[data-theme="light"] .theme-border { border-color: var(--card-border) !important; }
-[data-theme="light"] .theme-muted  { color: var(--muted) !important; }
-[data-theme="light"] .theme-text   { color: var(--foreground) !important; }
 
 /* ── Skeleton shimmer ─────────────────────────────────────────────────────── */
 @keyframes shimmer {
