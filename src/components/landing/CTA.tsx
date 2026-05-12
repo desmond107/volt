@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Button from "@/components/ui/Button";
+import EagleLogo from "@/components/ui/EagleLogo";
 import { ArrowRight } from "lucide-react";
 
 export default function CTA({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
@@ -10,6 +11,9 @@ export default function CTA({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-1 bg-gradient-to-r from-transparent via-indigo-500 to-transparent" />
           <div className="absolute -top-20 -right-20 w-64 h-64 bg-blue-700/10 rounded-full blur-3xl" />
           <div className="relative">
+            <div className="flex justify-center mb-6">
+              <EagleLogo size={56} />
+            </div>
             <h2 className="text-4xl font-bold text-white mb-4">
               Ready to spend your crypto?
             </h2>
