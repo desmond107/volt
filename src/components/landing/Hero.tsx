@@ -2,11 +2,12 @@
 import Link from "next/link";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Shield, Globe, ChevronLeft, ChevronRight, Zap } from "lucide-react";
+import { ArrowRight, Shield, Globe, ChevronLeft, ChevronRight, ChevronDown, Zap } from "lucide-react";
 import Button from "@/components/ui/Button";
 import EagleLogo from "@/components/ui/EagleLogo";
 
 const VIDEOS = ["/volt-vid2.mp4", "/volt-vid3.mp4", "/volt-video.mp4"];
+const CAROUSEL_INTERVAL = 3200;
 
 
 const cards = [
@@ -131,7 +132,10 @@ export default function Hero({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const [videoIndex, setVideoIndex] = useState(0);
+  const [videoReady, setVideoReady] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const [progress, setProgress] = useState(0);
+  const progressRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const handleVideoEnded = useCallback(() => {
     setVideoIndex((i) => (i + 1) % VIDEOS.length);
@@ -140,12 +144,27 @@ export default function Hero({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
   useEffect(() => {
     const el = videoRef.current;
     if (!el) return;
+    setVideoReady(false);
     el.src = VIDEOS[videoIndex];
     el.load();
     el.play().catch((err: unknown) => {
       if (err instanceof DOMException && err.name === "AbortError") return;
     });
   }, [videoIndex]);
+
+  // Progress bar that advances over CAROUSEL_INTERVAL, resets on card change
+  useEffect(() => {
+    if (paused) {
+      if (progressRef.current) clearInterval(progressRef.current);
+      return;
+    }
+    setProgress(0);
+    const tick = 50;
+    progressRef.current = setInterval(() => {
+      setProgress((p) => Math.min(p + (tick / CAROUSEL_INTERVAL) * 100, 100));
+    }, tick);
+    return () => { if (progressRef.current) clearInterval(progressRef.current); };
+  }, [current, paused]);
 
   const handleDemo = async () => {
     setDemoLoading(true);
@@ -172,12 +191,17 @@ export default function Hero({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
 
   useEffect(() => {
     if (paused) return;
-    intervalRef.current = setInterval(next, 3200);
+    intervalRef.current = setInterval(next, CAROUSEL_INTERVAL);
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
   }, [paused, next]);
 
   return (
     <section className="relative min-h-screen flex items-center overflow-hidden pt-16">
+      {/* Poster blur shown while video loads */}
+      <div
+        className="absolute inset-0 bg-[#020d1a] transition-opacity duration-700 pointer-events-none"
+        style={{ opacity: videoReady ? 0 : 1 }}
+      />
       {/* Video carousel background */}
       <video
         ref={videoRef}
@@ -185,8 +209,9 @@ export default function Hero({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
         muted
         playsInline
         onEnded={handleVideoEnded}
-        className="absolute inset-0 w-full h-full object-cover pointer-events-none"
-        style={{ opacity: 1 }}
+        onCanPlay={() => setVideoReady(true)}
+        className="absolute inset-0 w-full h-full object-cover pointer-events-none transition-opacity duration-700"
+        style={{ opacity: videoReady ? 1 : 0 }}
       >
         <source src={VIDEOS[0]} type="video/mp4" />
       </video>
@@ -330,10 +355,24 @@ export default function Hero({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
               </button>
             </div>
 
+            {/* Carousel progress bar */}
+            <div className="w-full max-w-sm mt-3 h-0.5 bg-white/10 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-blue-400/60 rounded-full transition-none"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+
             {/* Card name label */}
-            <p className="text-sm text-[#6b88b0] mt-3 tracking-wide">{cards[current].name}</p>
+            <p className="text-sm text-[#6b88b0] mt-2 tracking-wide">{cards[current].name}</p>
           </div>
         </div>
+      </div>
+
+      {/* Scroll-down cue */}
+      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1 text-white/40 animate-bounce">
+        <span className="text-[10px] uppercase tracking-widest">Scroll</span>
+        <ChevronDown className="w-4 h-4" />
       </div>
     </section>
   );

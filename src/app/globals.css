@@ -138,3 +138,64 @@ input:focus, select:focus, textarea:focus {
 input::placeholder, textarea::placeholder {
   color: #2d4a6e;
 }
+
+/* ── Light theme ──────────────────────────────────────────────────────────── */
+[data-theme="light"] {
+  --background: #f0f5fb;
+  --foreground: #0f1c2e;
+  --card: #ffffff;
+  --card-border: #ccd9ea;
+  --muted: #4a6280;
+}
+
+[data-theme="light"] body {
+  background: var(--background);
+  color: var(--foreground);
+}
+
+[data-theme="light"] ::-webkit-scrollbar-track { background: #e8eef6; }
+[data-theme="light"] ::-webkit-scrollbar-thumb { background: #b0c4d8; }
+
+[data-theme="light"] input,
+[data-theme="light"] select,
+[data-theme="light"] textarea {
+  background: #ffffff;
+  border-color: #ccd9ea;
+  color: #0f1c2e;
+}
+
+[data-theme="light"] input::placeholder,
+[data-theme="light"] textarea::placeholder { color: #8aa0b8; }
+
+/* Shared layout overrides so the sidebar/dashboard shell changes */
+[data-theme="light"] .theme-bg       { background-color: var(--background) !important; }
+[data-theme="light"] .theme-card     { background-color: var(--card) !important; }
+[data-theme="light"] .theme-border   { border-color: var(--card-border) !important; }
+[data-theme="light"] .theme-muted    { color: var(--muted) !important; }
+[data-theme="light"] .theme-text     { color: var(--foreground) !important; }
+
+/* ── Skeleton shimmer ─────────────────────────────────────────────────────── */
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
+}
+
+.skeleton {
+  background: linear-gradient(90deg, #0d2040 25%, #163060 50%, #0d2040 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+  border-radius: 0.375rem;
+}
+
+[data-theme="light"] .skeleton {
+  background: linear-gradient(90deg, #e2eaf4 25%, #ccd9ea 50%, #e2eaf4 75%);
+  background-size: 200% 100%;
+}
+
+/* ── Success pulse ────────────────────────────────────────────────────────── */
+@keyframes success-pulse {
+  0%   { box-shadow: 0 0 0 0   rgba(16, 185, 129, 0.5); }
+  70%  { box-shadow: 0 0 0 14px rgba(16, 185, 129, 0); }
+  100% { box-shadow: 0 0 0 0   rgba(16, 185, 129, 0); }
+}
+.success-pulse { animation: success-pulse 0.6s ease-out; }

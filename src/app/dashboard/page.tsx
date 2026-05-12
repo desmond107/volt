@@ -1,6 +1,8 @@
 import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import TopBar from "@/components/dashboard/TopBar";
+import DismissibleKycBanner from "@/components/dashboard/DismissibleKycBanner";
+import Sparkline from "@/components/ui/Sparkline";
 import Link from "next/link";
 import { formatCurrency, formatDateTime, getTransactionColor } from "@/lib/utils";
 import { FALLBACK_RATES, CURRENCY_SYMBOLS } from "@/lib/rates";
@@ -10,15 +12,12 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   TrendingUp,
-  AlertCircle,
   Plus,
   CheckCircle2,
   Circle,
   BarChart3,
   Globe,
 } from "lucide-react";
-import Button from "@/components/ui/Button";
-
 function fmt(amount: number, currency: string) {
   const sym = CURRENCY_SYMBOLS[currency] ?? "";
   const n = amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -142,23 +141,8 @@ export default async function DashboardPage() {
       <TopBar title="Overview" subtitle={`Welcome back, ${session.name?.split(" ")[0] ?? "there"}`} userName={session.name} />
 
       <main className="flex-1 p-6 space-y-6">
-        {/* KYC banner */}
-        {session.kycStatus !== "VERIFIED" && (
-          <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-4 flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <AlertCircle className="w-5 h-5 text-yellow-400 shrink-0" />
-              <div>
-                <p className="text-sm font-medium text-yellow-300">Complete KYC to unlock card issuance</p>
-                <p className="text-xs text-yellow-400/70">Verify your identity in under 3 minutes</p>
-              </div>
-            </div>
-            <Link href="/dashboard/kyc">
-              <Button size="sm" variant="outline" className="border-yellow-500/40 text-yellow-300 hover:bg-yellow-500/10 whitespace-nowrap">
-                Verify Now
-              </Button>
-            </Link>
-          </div>
-        )}
+        {/* KYC banner — dismissible */}
+        <DismissibleKycBanner kycStatus={session.kycStatus} />
 
         {/* Onboarding checklist */}
         <OnboardingChecklist
@@ -219,9 +203,9 @@ export default async function DashboardPage() {
               {wallets.map((w) => {
                 const colors: Record<string, string> = { USDC: "bg-blue-500", USDT: "bg-emerald-500", DAI: "bg-yellow-500" };
                 return (
-                  <div key={w.id} className="flex items-center justify-between">
+                  <div key={w.id} className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-3">
-                      <div className={`w-8 h-8 rounded-full ${colors[w.asset] || "bg-blue-600"} flex items-center justify-center text-white text-xs font-bold`}>
+                      <div className={`w-8 h-8 rounded-full ${colors[w.asset] || "bg-blue-600"} flex items-center justify-center text-white text-xs font-bold shrink-0`}>
                         {w.asset[0]}
                       </div>
                       <div>
@@ -229,6 +213,7 @@ export default async function DashboardPage() {
                         <div className="text-xs text-[#6b88b0]">{w.network}</div>
                       </div>
                     </div>
+                    <Sparkline seed={w.id} balance={w.balance.toNumber()} />
                     <div className="text-right">
                       <div className="text-sm font-semibold text-white">{formatCurrency(w.balance.toNumber())}</div>
                       <div className="text-xs text-[#6b88b0]">{w.balance.toNumber().toFixed(2)} {w.asset}</div>

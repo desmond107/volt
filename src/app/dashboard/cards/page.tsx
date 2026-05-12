@@ -187,7 +187,9 @@ function PayModal({ card, onClose, onSuccess }: {
 
         {success ? (
           <div className="p-8 flex flex-col items-center gap-3">
-            <CheckCircle2 className="w-12 h-12 text-emerald-400" />
+            <div className="w-16 h-16 rounded-full bg-emerald-500/10 flex items-center justify-center success-pulse">
+              <CheckCircle2 className="w-9 h-9 text-emerald-400" />
+            </div>
             <p className="text-white font-semibold">Payment Successful</p>
             <p className="text-xs text-[#6b88b0]">{formatCurrency(parseFloat(amount))} sent to {merchant}</p>
           </div>
@@ -704,6 +706,7 @@ export default function CardsPage() {
           className="relative group cursor-pointer"
           onClick={() => setCard3dView(card)}
           title="Click to view in 3D"
+          style={{ filter: card.status === "TERMINATED" ? "grayscale(1) opacity(0.55)" : card.status === "FROZEN" ? "grayscale(0.6) brightness(0.85)" : undefined }}
         >
           <VirtualCardFace
             color={card.color}
@@ -719,6 +722,14 @@ export default function CardsPage() {
             revealed={revealed}
             maskNumber={maskCardNumber}
           />
+          {/* Status badge overlay */}
+          {(card.status === "FROZEN" || card.status === "TERMINATED") && (
+            <div className="absolute inset-0 rounded-2xl flex items-center justify-center pointer-events-none">
+              <span className={`text-xs font-bold tracking-widest uppercase px-3 py-1 rounded-full border backdrop-blur-sm ${card.status === "FROZEN" ? "bg-sky-900/70 text-sky-200 border-sky-400/40" : "bg-neutral-900/70 text-neutral-300 border-neutral-500/40"}`}>
+                {card.status}
+              </span>
+            </div>
+          )}
           <div className="absolute inset-0 rounded-2xl bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center pointer-events-none">
             <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-black/60 rounded-lg px-3 py-1.5 flex items-center gap-1.5">
               <Maximize2 className="w-3.5 h-3.5 text-white" />

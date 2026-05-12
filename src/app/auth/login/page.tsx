@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff } from "lucide-react";
@@ -10,9 +10,15 @@ export default function LoginPage() {
   const router = useRouter();
   const [form, setForm] = useState({ email: "", password: "" });
   const [showPwd, setShowPwd] = useState(false);
+  const [remember, setRemember] = useState(false);
   const [loading, setLoading] = useState(false);
   const [demoLoading, setDemoLoading] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    const saved = localStorage.getItem("volt-remembered-email");
+    if (saved) { setForm((f) => ({ ...f, email: saved })); setRemember(true); }
+  }, []);
 
   const handleDemo = async () => {
     setDemoLoading(true);
@@ -39,6 +45,8 @@ export default function LoginPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Login failed");
+      if (remember) localStorage.setItem("volt-remembered-email", form.email.toLowerCase().trim());
+      else localStorage.removeItem("volt-remembered-email");
       router.push("/dashboard");
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Login failed");
@@ -115,6 +123,21 @@ export default function LoginPage() {
                 </button>
               </div>
             </div>
+
+            {/* Remember device */}
+            <label className="flex items-center gap-2.5 cursor-pointer select-none">
+              <div
+                onClick={() => setRemember(!remember)}
+                className={`w-4 h-4 rounded border flex items-center justify-center transition-colors shrink-0 ${remember ? "bg-blue-600 border-blue-600" : "border-[#0d2040] bg-[#061120]"}`}
+              >
+                {remember && (
+                  <svg className="w-2.5 h-2.5 text-white" viewBox="0 0 10 10" fill="none">
+                    <path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                )}
+              </div>
+              <span className="text-xs text-[#6b88b0]">Remember this device</span>
+            </label>
 
             <Button type="submit" className="w-full" loading={loading}>
               Sign In

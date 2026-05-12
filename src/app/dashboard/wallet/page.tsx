@@ -4,6 +4,7 @@ import TopBar from "@/components/dashboard/TopBar";
 import { formatCurrency, truncateAddress } from "@/lib/utils";
 import { Copy, Download, ArrowUpRight, RefreshCw, CheckCircle2, CreditCard, Smartphone, X, ArrowLeftRight, Send, Search, User, Plus, Trash2, AlertTriangle } from "lucide-react";
 import Button from "@/components/ui/Button";
+import { WalletCardSkeleton } from "@/components/ui/Skeleton";
 
 interface Wallet {
   id: string;
@@ -342,9 +343,7 @@ useEffect(() => { fetchWallets(); }, [fetchWallets]);
         {/* Wallet cards */}
         {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="h-40 bg-[#061120] border border-[#0d2040] rounded-xl animate-pulse" />
-            ))}
+            {[1, 2, 3].map((i) => <WalletCardSkeleton key={i} />)}
           </div>
         ) : wallets.length === 0 ? (
           <div className="bg-[#061120] border border-[#0d2040] rounded-2xl p-16 text-center">
