@@ -44,6 +44,9 @@ export default function Navbar({ isLoggedIn = false }: { isLoggedIn?: boolean })
     { href: "/#how-it-works", label: "How It Works" },
     { href: "/pricing",       label: "Pricing"      },
     { href: "/developers",    label: "Developers"   },
+    { href: "/about",         label: "About"        },
+    { href: "/status",        label: "Status"       },
+    { href: "/careers",       label: "Careers"      },
   ];
 
   return (
