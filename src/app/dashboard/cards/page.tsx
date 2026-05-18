@@ -3,7 +3,6 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import TopBar from "@/components/dashboard/TopBar";
 import VirtualCardFace, { getTheme } from "@/components/ui/VirtualCardFace";
-import EagleLogo from "@/components/ui/EagleLogo";
 import { formatCurrency, maskCardNumber } from "@/lib/utils";
 import { Plus, CreditCard, Eye, EyeOff, Snowflake, Trash2, AlertCircle, Link2, Link2Off, X, ArrowDownLeft, Wifi, WifiOff, Maximize2, ShoppingCart, CheckCircle2, ChevronRight, SlidersHorizontal, Globe, Truck, Timer, Flame } from "lucide-react";
 import Button from "@/components/ui/Button";
@@ -683,7 +682,6 @@ export default function CardsPage() {
     setFundLoading(false);
   };
 
-  const selectedColorStyle = getTheme(newCard.color);
   const fiatCards = cards.filter((c) => c.fiatWalletId !== null);
   const cryptoCards = cards.filter((c) => c.fiatWalletId === null);
 
@@ -944,51 +942,6 @@ export default function CardsPage() {
         ) : (
           <div className="space-y-10">
 
-            {/* ── Multi-Currency Wallet Cards ─────────────────────────────── */}
-            <div>
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-6 h-6 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
-                    <Globe className="w-3.5 h-3.5 text-blue-400" />
-                  </div>
-                  <h2 className="text-sm font-semibold text-white">Multi-Currency Cards</h2>
-                  <span className="bg-blue-500/10 text-blue-400 text-xs px-2 py-0.5 rounded-full border border-blue-500/20 font-medium">
-                    {fiatCards.length}
-                  </span>
-                </div>
-                <Link
-                  href="/dashboard/multi-wallet"
-                  className="text-xs text-[#6b88b0] hover:text-blue-300 flex items-center gap-1 transition-colors"
-                >
-                  Manage wallets
-                  <ChevronRight className="w-3 h-3" />
-                </Link>
-              </div>
-
-              {fiatCards.length === 0 ? (
-                <div className="bg-[#061120] border border-dashed border-[#0d2040] rounded-xl p-10 flex flex-col items-center gap-3 text-center">
-                  <div className="w-10 h-10 rounded-full bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
-                    <Globe className="w-5 h-5 text-blue-400/60" />
-                  </div>
-                  <p className="text-sm text-[#6b88b0]">No multi-currency cards yet.</p>
-                  <p className="text-xs text-[#4a6080] max-w-xs">
-                    Open any wallet on the Multi-Currency Wallets page and tap <strong className="text-[#6b88b0]">Create Virtual Card</strong>.
-                  </p>
-                  <Link href="/dashboard/multi-wallet">
-                    <button className="mt-1 text-xs text-blue-400 hover:text-blue-300 border border-blue-500/20 hover:border-blue-500/40 px-4 py-2 rounded-lg transition-colors">
-                      Go to Multi-Currency Wallets
-                    </button>
-                  </Link>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                  {fiatCards.map(renderCard)}
-                </div>
-              )}
-            </div>
-
-            <div className="border-t border-[#0d2040]" />
-
             {/* ── Digital Currency Cards ──────────────────────────────────── */}
             <div>
               <div className="flex items-center justify-between mb-4">
@@ -1028,6 +981,51 @@ export default function CardsPage() {
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                   {cryptoCards.map(renderCard)}
+                </div>
+              )}
+            </div>
+
+            <div className="border-t border-[#0d2040]" />
+
+            {/* ── Multi-Currency Wallet Cards ─────────────────────────────── */}
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-6 h-6 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
+                    <Globe className="w-3.5 h-3.5 text-blue-400" />
+                  </div>
+                  <h2 className="text-sm font-semibold text-white">Multi-Currency Cards</h2>
+                  <span className="bg-blue-500/10 text-blue-400 text-xs px-2 py-0.5 rounded-full border border-blue-500/20 font-medium">
+                    {fiatCards.length}
+                  </span>
+                </div>
+                <Link
+                  href="/dashboard/multi-wallet"
+                  className="text-xs text-[#6b88b0] hover:text-blue-300 flex items-center gap-1 transition-colors"
+                >
+                  Manage wallets
+                  <ChevronRight className="w-3 h-3" />
+                </Link>
+              </div>
+
+              {fiatCards.length === 0 ? (
+                <div className="bg-[#061120] border border-dashed border-[#0d2040] rounded-xl p-10 flex flex-col items-center gap-3 text-center">
+                  <div className="w-10 h-10 rounded-full bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
+                    <Globe className="w-5 h-5 text-blue-400/60" />
+                  </div>
+                  <p className="text-sm text-[#6b88b0]">No multi-currency cards yet.</p>
+                  <p className="text-xs text-[#4a6080] max-w-xs">
+                    Open any wallet on the Multi-Currency Wallets page and tap <strong className="text-[#6b88b0]">Create Virtual Card</strong>.
+                  </p>
+                  <Link href="/dashboard/multi-wallet">
+                    <button className="mt-1 text-xs text-blue-400 hover:text-blue-300 border border-blue-500/20 hover:border-blue-500/40 px-4 py-2 rounded-lg transition-colors">
+                      Go to Multi-Currency Wallets
+                    </button>
+                  </Link>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                  {fiatCards.map(renderCard)}
                 </div>
               )}
             </div>
