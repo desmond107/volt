@@ -272,8 +272,19 @@ export default function Features() {
             <div className="flex items-center gap-3">
               <ClientEagleLogo size={64} />
               <div className="flex flex-col leading-none text-left">
-                <span className="font-bold text-white text-2xl tracking-tight">Volt</span>
-                <span className="text-[10px] text-[#c9943a] uppercase tracking-[0.15em] font-semibold mt-0.5">
+                <span className="font-black text-2xl uppercase gradient-text" style={{ letterSpacing: "0.1em" }}>
+                  VOLT
+                </span>
+                <span
+                  className="text-[10px] uppercase font-semibold rounded-full border self-start px-1.5 py-0.5"
+                  style={{
+                    borderColor: "rgba(201,148,58,0.3)",
+                    backgroundColor: "rgba(201,148,58,0.08)",
+                    letterSpacing: "0.15em",
+                    marginTop: "4px",
+                    color: "#c9943a",
+                  }}
+                >
                   Digital Cards
                 </span>
               </div>

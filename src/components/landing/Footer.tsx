@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
-import EagleLogo from "@/components/ui/EagleLogo";
+import ClientEagleLogo from "@/components/ui/ClientEagleLogo";
 
 const links: Record<string, { label: string; href: string }[]> = {
   Product: [
@@ -31,7 +31,9 @@ const links: Record<string, { label: string; href: string }[]> = {
 };
 
 export default function Footer() {
-  const [revealed, setRevealed] = useState(false);
+  const [revealed,    setRevealed]    = useState(false);
+  const [logoHov,     setLogoHov]     = useState(false);
+  const [brandHov,    setBrandHov]    = useState(false);
 
   return (
     <footer className="border-t border-[#0d2040] py-16">
@@ -39,11 +41,57 @@ export default function Footer() {
         <div className="grid grid-cols-2 md:grid-cols-5 gap-8 mb-12">
           {/* Brand */}
           <div className="col-span-2 md:col-span-1">
-            <Link href="/" className="flex items-center gap-2.5 mb-4">
-              <EagleLogo size={60} />
+            <Link
+              href="/"
+              className="shine-btn flex items-center gap-2.5 mb-4 rounded-lg self-start"
+              onMouseEnter={() => setBrandHov(true)}
+              onMouseLeave={() => setBrandHov(false)}
+              style={{
+                display: "inline-flex",
+                transform: brandHov ? "scale(1.04)" : "scale(1)",
+                transition: "transform 0.2s ease",
+              }}
+            >
+              {/* Eagle: hover glow + wing-flap */}
+              <div
+                onMouseEnter={() => setLogoHov(true)}
+                onMouseLeave={() => setLogoHov(false)}
+                style={{
+                  filter: logoHov
+                    ? "drop-shadow(0 0 8px rgba(26,86,219,0.75)) drop-shadow(0 0 18px rgba(26,86,219,0.35))"
+                    : "none",
+                  transition: "filter 0.3s ease",
+                }}
+              >
+                <div className={logoHov ? "wing-flap" : ""}>
+                  <ClientEagleLogo size={64} />
+                </div>
+              </div>
+
+              {/* VOLT + Digital Cards */}
               <div className="flex flex-col leading-none">
-                <span className="font-bold text-white text-sm">Volt</span>
-                <span className="text-[8px] text-[#c9943a] uppercase tracking-[0.12em] font-semibold">Digital Cards</span>
+                <span
+                  className="font-black text-sm uppercase gradient-text"
+                  style={{
+                    letterSpacing: brandHov ? "0.2em" : "0.08em",
+                    transition: "letter-spacing 0.35s ease",
+                  }}
+                >
+                  VOLT
+                </span>
+                <span
+                  className="text-[9px] uppercase font-semibold rounded-full border self-start px-1.5 py-0.5"
+                  style={{
+                    borderColor: "rgba(201,148,58,0.3)",
+                    backgroundColor: "rgba(201,148,58,0.08)",
+                    letterSpacing: "0.12em",
+                    marginTop: "3px",
+                  }}
+                >
+                  <span className={brandHov ? "tagline-shimmer" : "text-[#c9943a]"}>
+                    Digital Cards
+                  </span>
+                </span>
               </div>
             </Link>
             <p className="text-xs text-[#6b88b0] leading-relaxed mb-4">
