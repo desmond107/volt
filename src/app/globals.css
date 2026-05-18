@@ -192,6 +192,21 @@ input::placeholder, textarea::placeholder {
 }
 .success-pulse { animation: success-pulse 0.6s ease-out; }
 
+/* ── How It Works — connector dot ────────────────────────────────────────── */
+@keyframes travel-dot {
+  0%   { left: 0%;    opacity: 0; }
+  6%   { opacity: 1; }
+  94%  { opacity: 1; }
+  100% { left: 100%;  opacity: 0; }
+}
+.travel-dot {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  animation: travel-dot 3s ease-in-out infinite;
+  animation-delay: 0.8s;
+}
+
 /* ── Eagle wing flap ──────────────────────────────────────────────────────── */
 @keyframes wing-flap {
   0%,  100% { transform: scaleY(1.00) translateY(0px);  }
