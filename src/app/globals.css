@@ -236,6 +236,21 @@ input::placeholder, textarea::placeholder {
   animation-delay: 0.8s;
 }
 
+/* ── Infinite marquee ────────────────────────────────────────────────────── */
+@keyframes marquee {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+.marquee-track {
+  display: flex;
+  width: max-content;
+  animation: marquee 32s linear infinite;
+  will-change: transform;
+}
+.marquee-track:hover {
+  animation-play-state: paused;
+}
+
 /* ── Eagle wing flap ──────────────────────────────────────────────────────── */
 @keyframes wing-flap {
   0%,  100% { transform: scaleY(1.00) translateY(0px);  }
