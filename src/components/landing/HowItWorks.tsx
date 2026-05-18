@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { UserCheck, Wallet, CreditCard, ShoppingCart, ArrowRight, Clock, CheckCircle2 } from "lucide-react";
+import { ChevronDown, ChevronUp } from "lucide-react";
 import Button from "@/components/ui/Button";
 
 // ── Data ──────────────────────────────────────────────────────────────────────
@@ -285,10 +286,20 @@ export default function HowItWorks() {
                     ))}
                   </ul>
 
-                  {/* Expand indicator */}
-                  <div className={`mt-3 text-[10px] transition-colors ${isActive ? "text-blue-400" : "text-[#2d4a6e]"}`}>
-                    {isActive ? "▲ less" : "▼ more"}
-                  </div>
+                  {/* Expand button */}
+                  <button
+                    className={`shine-btn mt-4 inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full border text-xs font-semibold transition-all duration-200 cursor-pointer ${
+                      isActive
+                        ? "bg-blue-600/20 border-blue-500/50 text-blue-300 shadow-[0_0_12px_rgba(59,130,246,0.25)]"
+                        : "bg-[#061120] border-blue-500/20 text-blue-400/70 hover:border-blue-400/50 hover:text-blue-300 hover:shadow-[0_0_14px_rgba(59,130,246,0.2)]"
+                    }`}
+                  >
+                    {isActive ? (
+                      <><ChevronUp className="w-3 h-3" />Show less</>
+                    ) : (
+                      <><ChevronDown className="w-3 h-3" />Learn more</>
+                    )}
+                  </button>
                 </div>
               );
             })}
