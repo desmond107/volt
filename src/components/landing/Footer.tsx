@@ -71,7 +71,7 @@ export default function Footer() {
               {/* VOLT + Digital Cards */}
               <div className="flex flex-col leading-none">
                 <span
-                  className="font-black text-sm uppercase gradient-text"
+                  className="font-black text-sm uppercase text-white"
                   style={{
                     letterSpacing: brandHov ? "0.2em" : "0.08em",
                     transition: "letter-spacing 0.35s ease",
@@ -122,7 +122,7 @@ export default function Footer() {
 
         <div className="border-t border-[#0d2040] pt-8 flex flex-col sm:flex-row justify-between items-center gap-4">
           <p className="text-xs text-[#6b88b0]">
-            © 2025 Volt Digital Cards Technologies. All rights reserved.
+            © 2026 Volt Digital Cards Technologies. All rights reserved.
           </p>
           <div className="flex items-center gap-4 text-xs text-[#6b88b0]">
             <span className="flex items-center gap-1">

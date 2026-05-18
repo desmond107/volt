@@ -58,7 +58,7 @@ const endpoints: Endpoint[] = [
       { name: "id", type: "string", required: true, desc: "Card ID (path parameter)" },
     ],
     body: null,
-    response: `{\n  "card": {\n    "id": "card_abc123",\n    "label": "Shopping Card",\n    "number": "4111111111114921",\n    "cvv": "392",\n    "expiry": "12/27",\n    "status": "ACTIVE",\n    "spend_limit": 500,\n    "spent": 123.45,\n    "currency": "USD",\n    "created_at": "2025-01-15T10:30:00Z"\n  }\n}`,
+    response: `{\n  "card": {\n    "id": "card_abc123",\n    "label": "Shopping Card",\n    "number": "4111111111114921",\n    "cvv": "392",\n    "expiry": "12/27",\n    "status": "ACTIVE",\n    "spend_limit": 500,\n    "spent": 123.45,\n    "currency": "USD",\n    "created_at": "2026-01-15T10:30:00Z"\n  }\n}`,
     errors: [
       { code: 401, message: "Invalid or missing API key" },
       { code: 404, message: "Card not found" },
@@ -145,7 +145,7 @@ const endpoints: Endpoint[] = [
       { name: "limit",   type: "integer",  required: false, desc: "Results per page, max 100 (default: 20)" },
     ],
     body: null,
-    response: `{\n  "transactions": [\n    {\n      "id": "txn_001",\n      "card_id": "card_abc123",\n      "amount": 29.99,\n      "currency": "USD",\n      "merchant": "Spotify",\n      "status": "COMPLETED",\n      "created_at": "2025-01-15T10:30:00Z"\n    }\n  ],\n  "total": 48,\n  "page": 1,\n  "pages": 3\n}`,
+    response: `{\n  "transactions": [\n    {\n      "id": "txn_001",\n      "card_id": "card_abc123",\n      "amount": 29.99,\n      "currency": "USD",\n      "merchant": "Spotify",\n      "status": "COMPLETED",\n      "created_at": "2026-01-15T10:30:00Z"\n    }\n  ],\n  "total": 48,\n  "page": 1,\n  "pages": 3\n}`,
     errors: [
       { code: 400, message: "Invalid date format for from/to parameters" },
       { code: 401, message: "Invalid or missing API key" },
@@ -172,7 +172,7 @@ const endpoints: Endpoint[] = [
     path: "/v1/webhooks",
     desc: "List all registered webhook endpoints",
     body: null,
-    response: `{\n  "webhooks": [\n    {\n      "id": "wh_001",\n      "url": "https://your-app.com/webhook",\n      "events": ["card.transaction", "wallet.deposit"],\n      "status": "ACTIVE",\n      "created_at": "2025-01-01T00:00:00Z"\n    }\n  ]\n}`,
+    response: `{\n  "webhooks": [\n    {\n      "id": "wh_001",\n      "url": "https://your-app.com/webhook",\n      "events": ["card.transaction", "wallet.deposit"],\n      "status": "ACTIVE",\n      "created_at": "2026-01-01T00:00:00Z"\n    }\n  ]\n}`,
     errors: [
       { code: 401, message: "Invalid or missing API key" },
     ],
@@ -281,10 +281,10 @@ $client->webhooks->on('card.transaction', function ($event) {
 };
 
 const changelog = [
-  { version: "v1.5.0", date: "2025-05-18", note: "Ruby and PHP SDKs released. gem install volt-sdk / composer require volt/sdk." },
-  { version: "v1.4.0", date: "2025-05-01", note: "Added /v1/transactions/simulate endpoint for sandbox testing." },
-  { version: "v1.3.0", date: "2025-03-15", note: "Added /v1/webhooks management endpoints. DAI support on Ethereum mainnet." },
-  { version: "v1.2.0", date: "2025-01-20", note: "Added pagination to /v1/transactions and /v1/cards. Rate limiting headers introduced." },
+  { version: "v1.5.0", date: "2026-05-18", note: "Ruby and PHP SDKs released. gem install volt-sdk / composer require volt/sdk." },
+  { version: "v1.4.0", date: "2026-05-01", note: "Added /v1/transactions/simulate endpoint for sandbox testing." },
+  { version: "v1.3.0", date: "2026-03-15", note: "Added /v1/webhooks management endpoints. DAI support on Ethereum mainnet." },
+  { version: "v1.2.0", date: "2026-01-20", note: "Added pagination to /v1/transactions and /v1/cards. Rate limiting headers introduced." },
   { version: "v1.1.0", date: "2024-11-10", note: "Go SDK released. Webhook signature verification via X-Volt-Signature." },
   { version: "v1.0.0", date: "2024-09-01", note: "Initial stable release. Node.js and Python SDKs available." },
 ];
@@ -609,7 +609,7 @@ X-Volt-Signature: sha256=3a7bd3e2...
 {
   "id": "evt_001",
   "type": "card.transaction",
-  "created_at": "2025-01-15T10:30:00Z",
+  "created_at": "2026-01-15T10:30:00Z",
   "data": {
     "transaction_id": "txn_001",
     "card_id": "card_abc123",

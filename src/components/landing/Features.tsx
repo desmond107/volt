@@ -272,7 +272,7 @@ export default function Features() {
             <div className="flex items-center gap-3">
               <ClientEagleLogo size={64} />
               <div className="flex flex-col leading-none text-left">
-                <span className="font-black text-2xl uppercase gradient-text" style={{ letterSpacing: "0.1em" }}>
+                <span className="font-black text-2xl uppercase text-white" style={{ letterSpacing: "0.1em" }}>
                   VOLT
                 </span>
                 <span

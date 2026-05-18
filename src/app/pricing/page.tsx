@@ -111,7 +111,7 @@ const faqItems = [
   { q: "Can I switch plans at any time?",
     a: "Absolutely. Upgrade or downgrade at any time. Billing is prorated daily, so you only pay for what you use." },
   { q: "What stablecoins are supported?",
-    a: "We support USDC, USDT, and DAI across Base and BSC networks. Ethereum mainnet support is coming in Q3 2025." },
+    a: "We support USDC, USDT, and DAI across Base and BSC networks. Ethereum mainnet support is coming in Q3 2026." },
   { q: "Is KYC mandatory?",
     a: "Yes — KYC is required to issue virtual cards and access higher spending limits. Most users complete Level 1 in under 3 minutes." },
   { q: "What is your refund policy?",

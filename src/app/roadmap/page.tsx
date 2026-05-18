@@ -4,7 +4,7 @@ import { CheckCircle2, Circle, Clock } from "lucide-react";
 
 const items = [
   {
-    quarter: "Q1 2025 — Shipped",
+    quarter: "Q1 2026 — Shipped",
     status: "done",
     features: [
       "Virtual Visa card issuance",
@@ -15,7 +15,7 @@ const items = [
     ],
   },
   {
-    quarter: "Q2 2025 — In Progress",
+    quarter: "Q2 2026 — In Progress",
     status: "active",
     features: [
       "NFC / contactless card support",
@@ -26,7 +26,7 @@ const items = [
     ],
   },
   {
-    quarter: "Q3 2025 — Planned",
+    quarter: "Q3 2026 — Planned",
     status: "planned",
     features: [
       "Multi-currency spend (KES, USD, EUR)",
@@ -37,7 +37,7 @@ const items = [
     ],
   },
   {
-    quarter: "Q4 2025 — Future",
+    quarter: "Q4 2026 — Future",
     status: "planned",
     features: [
       "Physical card programme",

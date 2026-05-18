@@ -17,7 +17,7 @@ export default function PressPage() {
             <h2 className="text-sm font-semibold text-white mb-4">Company Facts</h2>
             <dl className="space-y-3 text-xs">
               {[
-                ["Founded", "2025"],
+                ["Founded", "2026"],
                 ["Headquarters", "Nairobi, Kenya"],
                 ["Focus", "Stablecoin-powered Visa virtual cards"],
                 ["Supported assets", "USDC, USDT, DAI"],

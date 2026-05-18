@@ -93,7 +93,7 @@ export default function Navbar({ isLoggedIn = false }: { isLoggedIn?: boolean })
             >
               {/* VOLT: gradient, all-caps, bold, hover letter-spacing expand */}
               <span
-                className="font-black text-lg uppercase gradient-text"
+                className="font-black text-lg uppercase text-white"
                 style={{
                   letterSpacing: brandHov ? "0.22em" : "0.08em",
                   transition: "letter-spacing 0.35s ease",
@@ -164,7 +164,7 @@ export default function Navbar({ isLoggedIn = false }: { isLoggedIn?: boolean })
           <div className="flex items-center gap-2.5 pb-3 border-b border-[#0d2040]">
             <ClientEagleLogo size={44} />
             <div className="flex flex-col leading-none">
-              <span className="font-black text-base uppercase gradient-text" style={{ letterSpacing: "0.1em" }}>
+              <span className="font-black text-base uppercase text-white" style={{ letterSpacing: "0.1em" }}>
                 VOLT
               </span>
               <span
