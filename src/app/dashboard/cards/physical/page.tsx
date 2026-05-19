@@ -4,7 +4,7 @@ import { useSearchParams } from "next/navigation";
 import TopBar from "@/components/dashboard/TopBar";
 import EagleLogo from "@/components/ui/EagleLogo";
 import Button from "@/components/ui/Button";
-import { ArrowLeft, CheckCircle2, Clock, Package, Truck, MapPin, AlertCircle, ChevronRight, CreditCard, X, Trash2, Globe, ChevronDown } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Clock, Package, Truck, MapPin, AlertCircle, ChevronRight, CreditCard, X, Trash2, Globe, ChevronDown, Layers } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import VirtualCardFace from "@/components/ui/VirtualCardFace";
@@ -14,6 +14,32 @@ interface LinkedFiatWallet {
   currency: string;
   name: string | null;
   balance: number;
+}
+
+interface LinkedVirtualCard {
+  id: string;
+  label: string | null;
+  color: string;
+  brand: string;
+  currency: string;
+  walletId: string | null;
+  fiatWalletId: string | null;
+}
+
+interface DigitalCard {
+  id: string;
+  label: string | null;
+  color: string;
+  brand: string;
+  currency: string;
+  status: string;
+  walletId: string | null;
+  fiatWalletId: string | null;
+  cardHolder: string;
+  cardNumber: string;
+  expiryMonth: number;
+  expiryYear: number;
+  nfcEnabled: boolean;
 }
 
 interface PhysicalCardRequest {
@@ -30,6 +56,8 @@ interface PhysicalCardRequest {
   cardColor: string;
   fiatWalletId: string | null;
   fiatWallet: LinkedFiatWallet | null;
+  virtualCardId: string | null;
+  virtualCard: LinkedVirtualCard | null;
   trackingNumber: string | null;
   notes: string | null;
   createdAt: string;
@@ -414,6 +442,7 @@ function PhysicalCardPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const preselectedWalletId = searchParams.get("wallet");
+  const preselectedCardId = searchParams.get("card");
 
   const [loading, setLoading] = useState(true);
   const [request, setRequest] = useState<PhysicalCardRequest | null>(null);
@@ -426,6 +455,8 @@ function PhysicalCardPageInner() {
   const [cancelling, setCancelling] = useState(false);
   const [fiatWallets, setFiatWallets] = useState<LinkedFiatWallet[]>([]);
   const [walletDropdownOpen, setWalletDropdownOpen] = useState(false);
+  const [digitalCards, setDigitalCards] = useState<DigitalCard[]>([]);
+  const [selectedDigitalCardId, setSelectedDigitalCardId] = useState<string>("");
 
   const [form, setForm] = useState({
     fullName: "",
@@ -441,10 +472,11 @@ function PhysicalCardPageInner() {
   });
 
   const loadData = useCallback(async () => {
-    const [reqRes, meRes, walletsRes] = await Promise.all([
+    const [reqRes, meRes, walletsRes, cardsRes] = await Promise.all([
       fetch("/api/physical-cards"),
       fetch("/api/user"),
       fetch("/api/fiat-wallets"),
+      fetch("/api/cards"),
     ]);
     if (reqRes.ok) {
       const data = await reqRes.json();
@@ -462,10 +494,33 @@ function PhysicalCardPageInner() {
         setForm((f) => ({ ...f, fiatWalletId: preselectedWalletId }));
       }
     }
+    if (cardsRes.ok) {
+      const data = await cardsRes.json();
+      const cards: DigitalCard[] = (data.cards ?? []).filter((c: DigitalCard) => c.status !== "CANCELLED");
+      setDigitalCards(cards);
+      if (preselectedCardId && cards.some((c) => c.id === preselectedCardId)) {
+        setSelectedDigitalCardId(preselectedCardId);
+        const card = cards.find((c) => c.id === preselectedCardId);
+        if (card?.fiatWalletId) {
+          setForm((f) => ({ ...f, fiatWalletId: card.fiatWalletId! }));
+        }
+      }
+    }
     setLoading(false);
-  }, [preselectedWalletId]);
+  }, [preselectedWalletId, preselectedCardId]);
 
   useEffect(() => { loadData(); }, [loadData]);
+
+  const handleSelectDigitalCard = (card: DigitalCard | null) => {
+    if (!card) {
+      setSelectedDigitalCardId("");
+      return;
+    }
+    setSelectedDigitalCardId(card.id);
+    if (card.fiatWalletId) {
+      setForm((f) => ({ ...f, fiatWalletId: card.fiatWalletId! }));
+    }
+  };
 
   async function handleCancel() {
     setCancelling(true);
@@ -499,6 +554,7 @@ function PhysicalCardPageInner() {
     try {
       const body: Record<string, string> = { ...form };
       if (!body.fiatWalletId) delete body.fiatWalletId;
+      if (selectedDigitalCardId) body.virtualCardId = selectedDigitalCardId;
       const res = await fetch("/api/physical-cards", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -618,6 +674,16 @@ function PhysicalCardPageInner() {
                     </span>
                   </div>
                 </div>
+                {request.virtualCard && (
+                  <div>
+                    <div className="text-[10px] uppercase tracking-wider text-[#4a6080] mb-0.5">Digital Currency Card</div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="inline-block w-2.5 h-2.5 rounded-full" style={{ backgroundColor: request.virtualCard.color }} />
+                      <span className="text-white font-medium">{request.virtualCard.label ?? "Digital Card"}</span>
+                      <span className="text-[#6b88b0]">· {request.virtualCard.currency}</span>
+                    </div>
+                  </div>
+                )}
                 {request.fiatWallet && (
                   <div>
                     <div className="text-[10px] uppercase tracking-wider text-[#4a6080] mb-0.5">Linked Wallet</div>
@@ -730,7 +796,12 @@ function PhysicalCardPageInner() {
                 </span>{" "}
                 card and ship it to {request.city}, {request.country}. Expect delivery within 7–14 business days after approval.
               </p>
-              {request.fiatWallet && (
+              {request.virtualCard && (
+                <p className="text-xs text-blue-300 mt-2">
+                  Your physical card is the hardware version of your <strong>{request.virtualCard.label ?? "Digital Currency Card"}</strong>.
+                </p>
+              )}
+              {!request.virtualCard && request.fiatWallet && (
                 <p className="text-xs text-blue-300 mt-2">
                   Your physical card is linked to your <strong>{request.fiatWallet.currency}</strong> wallet.
                 </p>
@@ -758,9 +829,66 @@ function PhysicalCardPageInner() {
         {kycVerified && !request && !success && (
           <div className="bg-[#061120] border border-[#0d2040] rounded-xl p-6">
             <h2 className="text-base font-semibold text-white mb-1">Request Your Card</h2>
-            <p className="text-xs text-[#6b88b0] mb-6">Choose a color, optionally link a wallet, and enter your delivery address.</p>
+            <p className="text-xs text-[#6b88b0] mb-6">Link a Digital Currency Card, choose a color, and enter your delivery address.</p>
 
             <form onSubmit={handleSubmit} className="space-y-5">
+
+              {/* Digital Currency Card selector */}
+              {digitalCards.length > 0 && (
+                <div>
+                  <label className="block text-xs font-medium text-[#8aa0b8] mb-1.5">
+                    Link to a Digital Currency Card
+                    <span className="text-[#4a6080] font-normal ml-1.5">Optional — physical card spends from the same balance</span>
+                  </label>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-64 overflow-y-auto pr-1">
+                    {/* None option */}
+                    <button
+                      type="button"
+                      onClick={() => handleSelectDigitalCard(null)}
+                      className={`flex flex-col items-center justify-center gap-1.5 p-3 rounded-xl border text-xs transition-all ${
+                        !selectedDigitalCardId
+                          ? "border-[#1a56db]/50 bg-[#1a56db]/10 text-white"
+                          : "border-[#0d2040] text-[#4a6080] hover:border-[#1a3a5c]"
+                      }`}
+                    >
+                      <CreditCard className="w-5 h-5" />
+                      <span>No link</span>
+                    </button>
+                    {digitalCards.map((card) => {
+                      const isSelected = selectedDigitalCardId === card.id;
+                      return (
+                        <button
+                          key={card.id}
+                          type="button"
+                          onClick={() => handleSelectDigitalCard(card)}
+                          className={`flex flex-col items-start gap-2 p-3 rounded-xl border text-xs transition-all text-left ${
+                            isSelected
+                              ? "border-blue-500/50 bg-blue-500/10"
+                              : "border-[#0d2040] hover:border-[#1a3a5c]"
+                          }`}
+                        >
+                          <div className="flex items-center gap-1.5 w-full">
+                            <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: card.color }} />
+                            <span className={`font-medium truncate ${isSelected ? "text-blue-300" : "text-white"}`}>
+                              {card.label ?? "Digital Card"}
+                            </span>
+                          </div>
+                          <span className="text-[#4a6080]">{card.currency}{card.fiatWalletId ? " · Wallet linked" : card.walletId ? " · Crypto" : ""}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {selectedDigitalCardId && (() => {
+                    const card = digitalCards.find((c) => c.id === selectedDigitalCardId);
+                    return card ? (
+                      <p className="text-[10px] text-blue-400/70 mt-1.5 ml-1">
+                        Your physical card will be a hardware version of <strong>{card.label ?? "this card"}</strong> — spending from the same balance.
+                      </p>
+                    ) : null;
+                  })()}
+                </div>
+              )}
+
               {/* Color picker */}
               <div>
                 <label className="block text-xs font-medium text-[#8aa0b8] mb-3">Card Color</label>

@@ -9,7 +9,10 @@ export async function GET() {
   const request = await prisma.physicalCardRequest.findFirst({
     where: { userId: session.id },
     orderBy: { createdAt: "desc" },
-    include: { fiatWallet: { select: { id: true, currency: true, name: true, balance: true } } },
+    include: {
+      fiatWallet: { select: { id: true, currency: true, name: true, balance: true } },
+      virtualCard: { select: { id: true, label: true, color: true, brand: true, currency: true, walletId: true, fiatWalletId: true } },
+    },
   });
 
   return NextResponse.json({
@@ -38,7 +41,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "You already have an active card request" }, { status: 409 });
     }
 
-    const { fullName, phone, addressLine1, addressLine2, city, state, postalCode, country, cardColor, fiatWalletId } = await req.json();
+    const { fullName, phone, addressLine1, addressLine2, city, state, postalCode, country, cardColor, fiatWalletId, virtualCardId } = await req.json();
 
     if (!fullName?.trim() || !phone?.trim() || !addressLine1?.trim() || !city?.trim() || !postalCode?.trim() || !country?.trim()) {
       return NextResponse.json({ error: "Please fill in all required fields" }, { status: 400 });
@@ -72,6 +75,19 @@ export async function POST(req: NextRequest) {
       resolvedFiatWalletId = fiatWalletId;
     }
 
+    let resolvedVirtualCardId: string | null = null;
+    if (virtualCardId) {
+      const vcard = await prisma.virtualCard.findUnique({ where: { id: virtualCardId } });
+      if (!vcard || vcard.userId !== session.id) {
+        return NextResponse.json({ error: "Digital Currency Card not found" }, { status: 404 });
+      }
+      resolvedVirtualCardId = virtualCardId;
+      // Auto-link wallet from the virtual card if not already specified
+      if (!resolvedFiatWalletId && vcard.fiatWalletId) {
+        resolvedFiatWalletId = vcard.fiatWalletId;
+      }
+    }
+
     const request = await prisma.physicalCardRequest.create({
       data: {
         userId: session.id,
@@ -85,8 +101,12 @@ export async function POST(req: NextRequest) {
         country: country.trim(),
         cardColor: resolvedColor,
         ...(resolvedFiatWalletId ? { fiatWalletId: resolvedFiatWalletId } : {}),
+        ...(resolvedVirtualCardId ? { virtualCardId: resolvedVirtualCardId } : {}),
       },
-      include: { fiatWallet: { select: { id: true, currency: true, name: true, balance: true } } },
+      include: {
+        fiatWallet: { select: { id: true, currency: true, name: true, balance: true } },
+        virtualCard: { select: { id: true, label: true, color: true, brand: true, currency: true, walletId: true, fiatWalletId: true } },
+      },
     });
 
     return NextResponse.json({

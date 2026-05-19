@@ -822,8 +822,8 @@ export default function CardsPage() {
             {card.fiatWalletId ? "Linked" : card.wallet ? "Relink" : "Link"}
           </button>
           {card.fiatWalletId ? (
-            <button onClick={() => router.push(`/dashboard/cards/physical?wallet=${card.fiatWalletId}`)}
-              title="Order a physical card linked to this wallet"
+            <button onClick={() => router.push(`/dashboard/cards/physical?card=${card.id}&wallet=${card.fiatWalletId}`)}
+              title="Order a physical version of this Digital Currency Card"
               className="flex flex-col items-center justify-center gap-1 py-2.5 text-xs font-medium text-cyan-300 hover:text-cyan-100 bg-[#061120] border border-cyan-500/20 rounded-lg hover:border-cyan-500/50 transition-colors">
               <Truck className="w-4 h-4" /> Physical
             </button>
@@ -842,7 +842,7 @@ export default function CardsPage() {
         </div>
 
         {/* Actions row 2 */}
-        <div className="grid grid-cols-4 gap-2">
+        <div className={`grid gap-2 ${!card.fiatWalletId ? "grid-cols-5" : "grid-cols-4"}`}>
           <button onClick={() => handleToggleNfc(card.id, card.nfcEnabled)} disabled={actionLoading === card.id + "-nfc"}
             title={card.nfcEnabled ? "Disable NFC contactless payments" : "Enable NFC contactless payments"}
             className={`flex flex-col items-center justify-center gap-1 py-2.5 text-xs font-medium bg-[#061120] border rounded-lg transition-colors disabled:opacity-50 ${card.nfcEnabled ? "text-emerald-300 border-emerald-500/20 hover:text-red-300 hover:border-red-500/50" : "text-slate-300 border-slate-500/20 hover:text-emerald-300 hover:border-emerald-500/50"}`}>
@@ -867,6 +867,13 @@ export default function CardsPage() {
             className="flex flex-col items-center justify-center gap-1 py-2.5 text-xs font-medium text-slate-300 hover:text-white bg-[#061120] border border-slate-500/20 rounded-lg hover:border-slate-500/50 transition-colors">
             <SlidersHorizontal className="w-4 h-4" /> Limit
           </button>
+          {!card.fiatWalletId && (
+            <button onClick={() => router.push(`/dashboard/cards/physical?card=${card.id}${card.walletId ? "" : ""}`)}
+              title="Order a physical version of this Digital Currency Card"
+              className="flex flex-col items-center justify-center gap-1 py-2.5 text-xs font-medium text-cyan-300 hover:text-cyan-100 bg-[#061120] border border-cyan-500/20 rounded-lg hover:border-cyan-500/50 transition-colors">
+              <Truck className="w-4 h-4" /> Physical
+            </button>
+          )}
           <button onClick={() => setDeleteConfirm(card)} disabled={actionLoading === card.id}
             title="Permanently delete this card"
             className="flex flex-col items-center justify-center gap-1 py-2.5 text-xs font-medium text-red-400 hover:text-red-200 bg-[#061120] border border-red-500/20 rounded-lg hover:border-red-500/50 transition-colors disabled:opacity-50">

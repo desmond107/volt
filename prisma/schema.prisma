@@ -79,10 +79,11 @@ model VirtualCard {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  wallet       Wallet?     @relation(fields: [walletId], references: [id])
-  fiatWallet   FiatWallet? @relation(fields: [fiatWalletId], references: [id])
-  transactions Transaction[]
+  user                 User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  wallet               Wallet?               @relation(fields: [walletId], references: [id])
+  fiatWallet           FiatWallet?           @relation(fields: [fiatWalletId], references: [id])
+  transactions         Transaction[]
+  physicalCardRequests PhysicalCardRequest[]
 }
 
 model Transaction {
@@ -145,6 +146,7 @@ model PhysicalCardRequest {
   id             String    @id @default(cuid())
   userId         String
   fiatWalletId   String?
+  virtualCardId  String?
   status         String    @default("PENDING")
   fullName       String
   phone          String
@@ -160,8 +162,9 @@ model PhysicalCardRequest {
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
-  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  fiatWallet FiatWallet? @relation(fields: [fiatWalletId], references: [id])
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fiatWallet  FiatWallet?  @relation(fields: [fiatWalletId], references: [id])
+  virtualCard VirtualCard? @relation(fields: [virtualCardId], references: [id])
 }
 
 model FiatWallet {
