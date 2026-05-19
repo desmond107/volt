@@ -23,7 +23,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
-import EagleLogo from "@/components/ui/EagleLogo";
+import ClientEagleLogo from "@/components/ui/ClientEagleLogo";
 import { useTheme } from "@/components/ui/ThemeProvider";
 
 const nav = [
@@ -48,15 +48,21 @@ function SidebarContent({
   setCollapsed,
   onClose,
   unreadCount,
+  userName,
 }: {
   collapsed: boolean;
   setCollapsed: (v: boolean) => void;
   onClose?: () => void;
   unreadCount: number;
+  userName?: string | null;
 }) {
   const pathname = usePathname();
   const router = useRouter();
   const { theme, toggle } = useTheme();
+
+  const initials = userName
+    ? userName.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)
+    : "U";
 
   const handleLogout = async () => {
     await fetch("/api/auth/logout", { method: "POST" });
@@ -70,37 +76,53 @@ function SidebarContent({
   return (
     <aside
       className={cn(
-        "flex flex-col bg-[#040f1c] border-r border-[#0d2040] h-full transition-all duration-200",
+        "flex flex-col bg-[#040f1c] border-r border-[#0d2040] h-full transition-all duration-300",
         collapsed ? "w-16" : "w-56"
       )}
     >
       {/* Logo */}
-      <div className="flex items-center justify-between h-16 px-4 border-b border-[#0d2040]">
+      <div className="flex items-center justify-between h-16 px-3 border-b border-[#0d2040]">
         {!collapsed && (
-          <Link href="/" className="flex items-center gap-2" onClick={handleNavClick}>
-            <EagleLogo size={56} />
-            <div className="flex flex-col leading-none">
-              <span className="text-sm font-bold text-white">Volt</span>
-              <span className="text-[8px] text-[#c9943a] uppercase tracking-[0.12em] font-semibold">Digital Cards</span>
+          <Link href="/" className="flex items-center gap-2 min-w-0" onClick={handleNavClick}>
+            <ClientEagleLogo size={48} />
+            <div className="flex flex-col leading-none min-w-0">
+              <span
+                className="font-black text-sm uppercase text-white"
+                style={{ letterSpacing: "0.1em" }}
+              >
+                VOLT
+              </span>
+              <span
+                className="text-[8px] uppercase font-semibold rounded-full border self-start px-1.5 py-0.5"
+                style={{
+                  borderColor: "rgba(201,148,58,0.3)",
+                  backgroundColor: "rgba(201,148,58,0.08)",
+                  letterSpacing: "0.12em",
+                  marginTop: "2px",
+                  color: "#c9943a",
+                }}
+              >
+                Digital Cards
+              </span>
             </div>
           </Link>
         )}
         {collapsed && (
           <div className="flex items-center justify-center mx-auto">
-            <EagleLogo size={48} />
+            <ClientEagleLogo size={40} />
           </div>
         )}
         <button
           onClick={() => (onClose ? onClose() : setCollapsed(!collapsed))}
           className={cn(
-            "text-[#6b88b0] hover:text-white p-1 rounded transition-colors",
-            collapsed && "mx-auto mt-0"
+            "shrink-0 text-[#6b88b0] hover:text-white p-1 rounded transition-colors",
+            collapsed && "mx-auto"
           )}
         >
           {onClose ? (
             <X className="w-4 h-4" />
           ) : (
-            <ChevronLeft className={cn("w-4 h-4 transition-transform", collapsed && "rotate-180")} />
+            <ChevronLeft className={cn("w-4 h-4 transition-transform duration-300", collapsed && "rotate-180")} />
           )}
         </button>
       </div>
@@ -117,12 +139,17 @@ function SidebarContent({
               href={item.href}
               onClick={handleNavClick}
               className={cn(
-                "flex items-center gap-3 px-2.5 py-2 rounded-lg text-sm transition-colors",
+                "flex items-center gap-3 px-2.5 py-2 rounded-lg text-sm transition-all duration-200",
                 active
-                  ? "bg-blue-700/15 text-blue-300 border border-blue-600/20"
+                  ? "bg-blue-700/15 text-blue-300"
                   : "text-[#6b88b0] hover:text-white hover:bg-[#0d2040]",
                 collapsed && "justify-center px-2"
               )}
+              style={
+                active && !collapsed
+                  ? { borderLeft: "2px solid rgba(59,130,246,0.8)", paddingLeft: "8px", boxShadow: "inset 3px 0 12px rgba(59,130,246,0.08)" }
+                  : {}
+              }
               title={collapsed ? item.label : undefined}
             >
               <div className="relative shrink-0">
@@ -159,7 +186,7 @@ function SidebarContent({
       </nav>
 
       {/* Secondary nav */}
-      <div className="py-4 px-2 space-y-0.5 border-t border-[#0d2040]">
+      <div className="py-3 px-2 space-y-0.5 border-t border-[#0d2040]">
         {secondary.map((item) => {
           const Icon = item.icon;
           return (
@@ -201,11 +228,33 @@ function SidebarContent({
           {!collapsed && <span>Sign Out</span>}
         </button>
       </div>
+
+      {/* User profile */}
+      <div className={cn("border-t border-[#0d2040]", collapsed ? "px-2 py-3 flex justify-center" : "px-3 py-3")}>
+        {collapsed ? (
+          <div
+            className="w-7 h-7 rounded-full bg-blue-700 flex items-center justify-center text-white text-[10px] font-bold shrink-0"
+            title={userName ?? "User"}
+          >
+            {initials}
+          </div>
+        ) : (
+          <div className="flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-full bg-blue-700 flex items-center justify-center text-white text-[10px] font-bold shrink-0">
+              {initials}
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="text-xs font-medium text-white truncate">{userName ?? "User"}</div>
+              <div className="text-[10px] text-[#6b88b0]">Volt member</div>
+            </div>
+          </div>
+        )}
+      </div>
     </aside>
   );
 }
 
-export default function Sidebar() {
+export default function Sidebar({ userName }: { userName?: string | null }) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -232,7 +281,7 @@ export default function Sidebar() {
 
       {/* Desktop sidebar */}
       <div className="hidden md:flex h-full">
-        <SidebarContent collapsed={collapsed} setCollapsed={setCollapsed} unreadCount={unreadCount} />
+        <SidebarContent collapsed={collapsed} setCollapsed={setCollapsed} unreadCount={unreadCount} userName={userName} />
       </div>
 
       {/* Mobile overlay */}
@@ -240,7 +289,7 @@ export default function Sidebar() {
         <div className="fixed inset-0 z-50 flex md:hidden">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setMobileOpen(false)} />
           <div className="relative z-10 flex h-full">
-            <SidebarContent collapsed={false} setCollapsed={() => {}} onClose={() => setMobileOpen(false)} unreadCount={unreadCount} />
+            <SidebarContent collapsed={false} setCollapsed={() => {}} onClose={() => setMobileOpen(false)} unreadCount={unreadCount} userName={userName} />
           </div>
         </div>
       )}

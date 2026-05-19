@@ -1,6 +1,8 @@
 "use client";
-import { Bell, Sun, Moon, CheckCheck } from "lucide-react";
+import { Bell, Sun, Moon, CheckCheck, Settings, LogOut } from "lucide-react";
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 interface Notification {
   id: string;
@@ -35,17 +37,36 @@ const typeColors: Record<string, string> = {
   CARD: "bg-violet-400",
 };
 
-export default function TopBar({ title, subtitle, userName }: TopBarProps) {
+export default function TopBar({ title, userName }: TopBarProps) {
+  const router = useRouter();
+  const firstName = userName?.split(" ")[0] ?? "there";
   const initials = userName
     ? userName.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)
     : "U";
 
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [showNotifs, setShowNotifs] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
   const [darkMode, setDarkMode] = useState(true);
+  const [greeting, setGreeting] = useState("");
+  const [clock, setClock] = useState("");
+
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const profileRef = useRef<HTMLDivElement>(null);
 
   const unreadCount = notifications.filter((n) => !n.read).length;
+
+  // Live clock + time-based greeting
+  useEffect(() => {
+    const update = () => {
+      const h = new Date().getHours();
+      setGreeting(h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening");
+      setClock(new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }));
+    };
+    update();
+    const id = setInterval(update, 1000);
+    return () => clearInterval(id);
+  }, []);
 
   const fetchNotifications = useCallback(async () => {
     const res = await fetch("/api/notifications");
@@ -62,6 +83,9 @@ export default function TopBar({ title, subtitle, userName }: TopBarProps) {
     function handleClickOutside(e: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
         setShowNotifs(false);
+      }
+      if (profileRef.current && !profileRef.current.contains(e.target as Node)) {
+        setShowProfile(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
@@ -93,14 +117,30 @@ export default function TopBar({ title, subtitle, userName }: TopBarProps) {
     });
   };
 
+  const handleLogout = async () => {
+    await fetch("/api/auth/logout", { method: "POST" });
+    router.push("/");
+  };
+
   return (
-    <header className="h-16 border-b border-[#0d2040] flex items-center justify-between px-6 bg-[#020c1b]">
+    <header className="h-16 border-b border-[#0d2040] flex items-center justify-between px-6 bg-[#020c1b] shrink-0">
       <div>
         <h1 className="text-base font-semibold text-white">{title}</h1>
-        {subtitle && <p className="text-xs text-[#6b88b0]">{subtitle}</p>}
+        {greeting && (
+          <p className="text-xs text-[#6b88b0]">
+            {greeting}, {firstName}
+          </p>
+        )}
       </div>
 
       <div className="flex items-center gap-3">
+        {/* Live clock */}
+        {clock && (
+          <span className="hidden sm:block text-xs font-mono text-[#4a6080] tabular-nums">
+            {clock}
+          </span>
+        )}
+
         {/* Dark/light toggle */}
         <button
           onClick={toggleDark}
@@ -113,7 +153,7 @@ export default function TopBar({ title, subtitle, userName }: TopBarProps) {
         {/* Notifications */}
         <div className="relative" ref={dropdownRef}>
           <button
-            onClick={() => setShowNotifs((v) => !v)}
+            onClick={() => { setShowNotifs((v) => !v); setShowProfile(false); }}
             className="relative p-2 text-[#6b88b0] hover:text-white hover:bg-[#0d2040] rounded-lg transition-colors"
           >
             <Bell className="w-4 h-4" />
@@ -168,9 +208,40 @@ export default function TopBar({ title, subtitle, userName }: TopBarProps) {
           )}
         </div>
 
-        {/* Avatar */}
-        <div className="w-8 h-8 rounded-full bg-blue-700 flex items-center justify-center text-white text-xs font-bold">
-          {initials}
+        {/* Avatar + profile dropdown */}
+        <div className="relative" ref={profileRef}>
+          <button
+            onClick={() => { setShowProfile((v) => !v); setShowNotifs(false); }}
+            className="w-8 h-8 rounded-full bg-blue-700 flex items-center justify-center text-white text-xs font-bold hover:ring-2 hover:ring-blue-500/50 transition-all"
+          >
+            {initials}
+          </button>
+
+          {showProfile && (
+            <div className="absolute right-0 top-10 w-52 bg-[#061120] border border-[#0d2040] rounded-xl shadow-2xl z-50 overflow-hidden">
+              <div className="px-4 py-3 border-b border-[#0d2040]">
+                <div className="text-xs font-semibold text-white">{userName ?? "User"}</div>
+                <div className="text-[10px] text-[#6b88b0] mt-0.5">Volt member</div>
+              </div>
+              <div className="py-1.5">
+                <Link
+                  href="/dashboard/settings"
+                  onClick={() => setShowProfile(false)}
+                  className="flex items-center gap-2.5 px-4 py-2 text-xs text-[#6b88b0] hover:text-white hover:bg-[#0d2040] transition-colors"
+                >
+                  <Settings className="w-3.5 h-3.5" />
+                  Settings
+                </Link>
+                <button
+                  onClick={handleLogout}
+                  className="w-full flex items-center gap-2.5 px-4 py-2 text-xs text-red-400 hover:bg-red-500/10 transition-colors"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                  Sign Out
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </header>
