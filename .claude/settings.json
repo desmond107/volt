@@ -3,7 +3,11 @@
     "allow": [
       "Bash(xargs ls *)",
       "Bash(grep -v \"^$\")",
-      "Bash(git checkout *)"
+      "Bash(git checkout *)",
+      "Bash(pkill -f \"next start\")",
+      "Bash(pkill -f \"3987\")",
+      "Bash(lsof -ti:3987)",
+      "Bash(xargs kill)"
     ],
     "additionalDirectories": [
       "/Users/desmond/Desktop/codebase/volt/src/app/api/wallet"
